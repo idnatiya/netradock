@@ -12,6 +12,8 @@ func NewFiber(v *viper.Viper) *fiber.App {
 	return fiber.New(fiber.Config{
 		AppName:      "Netradock",
 		ErrorHandler: errorHandler,
+		// Image IDs ("sha256:...") arrive percent-encoded; decode before matching params.
+		UnescapePath: true,
 		// Behind a reverse proxy set NETRADOCK_PROXY_HEADER=X-Forwarded-For so the login limiter sees client IPs.
 		ProxyHeader: v.GetString("proxy_header"),
 	})

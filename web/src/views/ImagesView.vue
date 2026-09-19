@@ -58,9 +58,11 @@ async function remove(i: Image) {
         <thead><tr><th>Tag</th><th>ID</th><th>Ukuran</th><th>Dibuat</th><th>Dipakai</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>
           <tr v-for="i in sorted" :key="i.id">
-            <td class="tags">
-              <span v-for="t in i.tags" :key="t" class="mono">{{ t }}</span>
-              <span v-if="i.tags.length === 0" class="sub">tanpa tag</span>
+            <td>
+              <div class="tags">
+                <span v-for="t in i.tags" :key="t" class="mono">{{ t }}</span>
+                <span v-if="i.tags.length === 0" class="sub">tanpa tag</span>
+              </div>
             </td>
             <td data-label="ID" class="mono">{{ shortId(i.id) }}</td>
             <td data-label="Ukuran">{{ bytes(i.size) }}</td>
