@@ -18,11 +18,9 @@ The app listens on `127.0.0.1:8080`. Serve it through an HTTPS reverse proxy (Ca
 ## Development
 
 ```sh
-cd web && npm install && npm run build && cd ..   # go:embed needs web/dist to exist
-NETRADOCK_USERNAME=admin NETRADOCK_PASSWORD=dev go run ./cmd/web
-cd web && npm run dev                              # http://localhost:5173, proxies /api and /ws to :8080
+make dev     # Go API on :18080 + Vite on http://localhost:5173 (login admin / admin), Ctrl+C stops both
+make test    # go test ./...
+make build   # production binary ./netradock with the UI embedded
 ```
 
-`NETRADOCK_BACKEND=http://localhost:18080 npm run dev` points the Vite proxy at another port.
-
-Tests: `go test ./...`
+Override with env or `.env`: `NETRADOCK_PORT=19000 WEB_PORT=5174 make dev`. The API runs via `go run`, so restart `make dev` after Go changes; Vite hot-reloads the UI.
