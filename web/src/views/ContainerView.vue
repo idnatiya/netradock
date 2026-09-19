@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { IconCopy, IconPlayerPlay, IconPlayerStop, IconRefresh, IconTerminal2, IconTrash } from '@tabler/icons-vue'
+import { IconBox, IconCopy, IconPlayerPlay, IconPlayerStop, IconRefresh, IconTerminal2, IconTrash } from '@tabler/icons-vue'
+import Sparkline from '@/components/Sparkline.vue'
+import { ago, bytes } from '@/format'
+import { useLiveStats } from '@/liveStats'
 import { api, notify } from '@/api'
 import { containerAction } from '@/actions'
 import LoadState from '@/components/LoadState.vue'
@@ -50,6 +53,10 @@ const name = computed(() => data.value?.Name.replace(/^\//, '') ?? '')
 const state = computed(() => data.value?.State.Status ?? '')
 const running = computed(() => state.value === 'running')
 
+const live = useLiveStats()
+const now = computed(() => live.latest.value[data.value?.Id ?? ''])
+const startedAt = computed(() => (data.value && running.value ? Date.parse(data.value.State.StartedAt) / 1000 : 0))
+
 const busy = ref(false)
 async function act(action: 'start' | 'stop' | 'restart' | 'remove') {
   busy.value = true
@@ -88,8 +95,11 @@ async function copyInspect() {
 
 <template>
   <PageHeader pretitle="Container" :title="name || id.slice(0, 12)">
+    <template #avatar>
+      <span class="avatar avatar-lg" :class="running ? 'bg-green-lt' : 'bg-red-lt'"><IconBox :size="28" /></span>
+    </template>
     <template #meta>
-      <div v-if="data" class="d-flex flex-wrap align-items-center gap-2 mt-1 text-secondary">
+      <div v-if="data" class="d-flex flex-wrap align-items-center gap-2 mt-2 text-secondary">
         <StateBadge :state="state" :label="state === 'exited' ? `exited, kode ${data.State.ExitCode}` : state" />
         <span v-if="data.State.Health" class="badge bg-secondary-lt">health: {{ data.State.Health.Status }}</span>
         <span v-if="data.RestartCount" class="badge bg-yellow-lt">restart {{ data.RestartCount }}x</span>
@@ -117,7 +127,38 @@ async function copyInspect() {
         </LoadState>
       </div>
 
-      <div v-else class="card">
+      <div v-if="data" class="row row-cards mb-3">
+        <div class="col-6 col-lg-3">
+          <div class="card card-sm"><div class="card-body">
+            <div class="subheader">CPU</div>
+            <div class="h2 mb-1">{{ now ? `${now.cpu_percent.toFixed(1)}%` : '-' }}</div>
+            <Sparkline :values="live.history[data.Id]?.cpu ?? []" :height="24" :floor="5" />
+          </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="card card-sm"><div class="card-body">
+            <div class="subheader">Memori</div>
+            <div class="h2 mb-1">{{ now ? bytes(now.mem_usage) : '-' }}</div>
+            <Sparkline :values="live.history[data.Id]?.mem ?? []" :height="24" :floor="16 * 1024 * 1024" />
+          </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="card card-sm"><div class="card-body">
+            <div class="subheader">Berjalan sejak</div>
+            <div class="h2 mb-1">{{ startedAt ? ago(startedAt) : 'tidak berjalan' }}</div>
+            <div class="text-secondary small">dibuat {{ ago(Date.parse(data.Created) / 1000) }}</div>
+          </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="card card-sm"><div class="card-body">
+            <div class="subheader">Restart</div>
+            <div class="h2 mb-1">{{ data.RestartCount }}x</div>
+            <div class="text-secondary small">kode keluar terakhir {{ data.State.ExitCode }}</div>
+          </div></div>
+        </div>
+      </div>
+
+      <div v-if="data" class="card">
         <div v-if="error" class="alert alert-warning m-3" role="alert">Data mungkin sudah lama: {{ error }}</div>
         <div class="card-header">
           <ul class="nav nav-tabs card-header-tabs flex-nowrap overflow-auto" role="tablist" aria-label="Detail container" @keydown="onTabKey">

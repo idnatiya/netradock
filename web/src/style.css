@@ -1,5 +1,32 @@
 /* Small additions on top of Tabler; colors come from --tblr-* so both themes work. */
 
+/* Brand: Docker blue as Tabler's primary, both themes. */
+:root, [data-bs-theme] {
+  --tblr-primary: #1d63ed;
+  --tblr-primary-rgb: 29, 99, 237;
+  --tblr-primary-darken: color-mix(in oklab, #1d63ed, black 15%);
+  --tblr-primary-lt: color-mix(in oklab, #1d63ed 10%, transparent);
+  --tblr-link-color: #1d63ed;
+  --tblr-link-color-rgb: 29, 99, 237;
+  --tblr-link-hover-color: color-mix(in oklab, #1d63ed, black 15%);
+}
+[data-bs-theme='dark'] {
+  --tblr-link-color: #5b8ff5;
+  --tblr-link-color-rgb: 91, 143, 245;
+  --tblr-link-hover-color: #85acf8;
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--tblr-border-radius);
+  background: var(--tblr-primary);
+  color: #fff;
+}
+
 /* Tabler expects .page to be a direct flex child of body; #app sits in between. */
 #app { display: flex; flex-direction: column; min-height: 100vh; }
 #app > .page { flex: 1; }

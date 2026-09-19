@@ -80,6 +80,15 @@ func (c *WSController) Stats(conn *websocket.Conn) {
 	c.closeWithError(conn, err)
 }
 
+func (c *WSController) AllStats(conn *websocket.Conn) {
+	ctx, cancel := untilClosed(conn)
+	defer cancel()
+	err := c.UseCase.StreamAllStats(ctx, func(s map[string]model.StatsResponse) error {
+		return conn.WriteJSON(s)
+	})
+	c.closeWithError(conn, err)
+}
+
 type execControl struct {
 	Type string `json:"type"`
 	Cols uint   `json:"cols"`

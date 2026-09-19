@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"sync"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/idnatiya/netradock/internal/model"
@@ -90,6 +92,84 @@ func (u *ContainerUseCase) StreamStats(ctx context.Context, id string, send func
 			return err
 		}
 		if err := send(converter.StatsToResponse(s)); err != nil {
+			return err
+		}
+	}
+}
+
+// StreamAllStats sends the latest sample of every running container every 2 seconds.
+// ponytail: one daemon stats stream per running container; fine for dozens, not thousands.
+func (u *ContainerUseCase) StreamAllStats(ctx context.Context, send func(map[string]model.StatsResponse) error) error {
+	var mu sync.Mutex
+	latest := map[string]model.StatsResponse{}
+	streams := map[string]context.CancelFunc{}
+	defer func() {
+		for _, cancel := range streams {
+			cancel()
+		}
+	}()
+
+	refresh := func() error {
+		items, err := u.Repository.ListContainers(ctx, false)
+		if err != nil {
+			return err
+		}
+		running := make(map[string]bool, len(items))
+		for _, c := range items {
+			running[c.ID] = true
+			if streams[c.ID] != nil {
+				continue
+			}
+			sctx, cancel := context.WithCancel(ctx)
+			streams[c.ID] = cancel
+			go func(id string) {
+				err := u.StreamStats(sctx, id, func(s model.StatsResponse) error {
+					mu.Lock()
+					latest[id] = s
+					mu.Unlock()
+					return nil
+				})
+				if err != nil && sctx.Err() == nil {
+					u.Log.WithError(err).WithField("container", id).Debug("stats stream ended")
+				}
+			}(c.ID)
+		}
+		mu.Lock()
+		for id, cancel := range streams {
+			if !running[id] {
+				cancel()
+				delete(streams, id)
+				delete(latest, id)
+			}
+		}
+		mu.Unlock()
+		return nil
+	}
+
+	if err := refresh(); err != nil {
+		return err
+	}
+	tick := time.NewTicker(2 * time.Second)
+	defer tick.Stop()
+	for n := 1; ; n++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-tick.C:
+		}
+		// Pick up started and stopped containers every other tick (~4s).
+		if n%2 == 0 {
+			if err := refresh(); err != nil {
+				return err
+			}
+		}
+		mu.Lock()
+		snapshot := make(map[string]model.StatsResponse, len(latest))
+		for id, s := range latest {
+			snapshot[id] = s
+		}
+		mu.Unlock()
+		if err := send(snapshot); err != nil {
 			return err
 		}
 	}

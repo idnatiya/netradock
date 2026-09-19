@@ -1,19 +1,25 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { IconBox, IconPlayerPlay, IconPlayerStop, IconRefresh, IconSearch, IconTrash } from '@tabler/icons-vue'
+import { IconBox, IconDotsVertical, IconFileText, IconPlayerPlay, IconPlayerStop, IconRefresh, IconSearch, IconTerminal2, IconTrash } from '@tabler/icons-vue'
 import { api, type Container } from '@/api'
 import { containerAction } from '@/actions'
 import LoadState from '@/components/LoadState.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import PortLinks from '@/components/PortLinks.vue'
 import StateBadge from '@/components/StateBadge.vue'
+import Dropdown from '@/components/Dropdown.vue'
+import Sparkline from '@/components/Sparkline.vue'
+import { bytes } from '@/format'
+import { useLiveStats } from '@/liveStats'
 import { useLoad } from '@/useLoad'
 
 const { data, error, loading, reload } = useLoad(() => api<Container[]>('GET', '/containers?all=true'), 5000)
 const query = ref('')
 const showStopped = ref(true)
 const busy = ref<string | null>(null)
+const live = useLiveStats()
+const avatarColor = (state: string) => (state === 'running' ? 'bg-green-lt' : state === 'exited' || state === 'dead' ? 'bg-red-lt' : 'bg-yellow-lt')
 
 // Compose projects become groups, like Docker Desktop; standalone containers go last.
 const groups = computed(() => {
@@ -85,25 +91,54 @@ async function act(c: Container, action: 'start' | 'stop' | 'restart' | 'remove'
           <div class="card">
             <div class="card-header">
               <h3 class="card-title text-break-all">{{ project || 'Tanpa compose project' }}</h3>
-              <span class="badge bg-secondary-lt ms-2">{{ items.length }}</span>
+              <span class="badge bg-secondary-lt ms-2">{{ items.filter((c) => c.state === 'running').length }}/{{ items.length }} berjalan</span>
             </div>
             <div class="table-responsive-md">
               <table class="table card-table table-vcenter table-stack containers">
                 <thead>
-                  <tr><th>Nama</th><th>Status</th><th>Image</th><th>Port</th><th><span class="visually-hidden">Aksi</span></th></tr>
+                  <tr><th>Container</th><th>Status</th><th>Port</th><th>CPU</th><th>Memori</th><th><span class="visually-hidden">Aksi</span></th></tr>
                 </thead>
                 <tbody>
                   <tr v-for="c in items" :key="c.id" :aria-busy="busy === c.id">
-                    <td><RouterLink :to="`/containers/${c.id}`" class="fw-medium text-break-all">{{ c.name }}</RouterLink></td>
+                    <td>
+                      <div class="d-flex align-items-center gap-2 min-w-0">
+                        <span class="avatar avatar-sm flex-shrink-0" :class="avatarColor(c.state)"><IconBox :size="18" /></span>
+                        <div class="min-w-0">
+                          <RouterLink :to="`/containers/${c.id}`" class="fw-medium d-block text-truncate">{{ c.name }}</RouterLink>
+                          <div class="text-secondary small font-monospace text-truncate" :title="c.image">{{ c.image }}</div>
+                        </div>
+                      </div>
+                    </td>
                     <td data-label="Status"><StateBadge :state="c.state" :label="c.status" /></td>
-                    <td data-label="Image" class="text-secondary font-monospace text-break-all">{{ c.image }}</td>
                     <td data-label="Port"><PortLinks :ports="c.ports" /></td>
+                    <td data-label="CPU">
+                      <template v-if="live.latest.value[c.id]">
+                        <div class="small">{{ live.latest.value[c.id]!.cpu_percent.toFixed(1) }}%</div>
+                        <Sparkline class="d-none d-md-block" :values="live.history[c.id]?.cpu ?? []" :height="20" :floor="5" />
+                      </template>
+                      <span v-else class="text-secondary">-</span>
+                    </td>
+                    <td data-label="Memori">
+                      <template v-if="live.latest.value[c.id]">
+                        <div class="small">{{ bytes(live.latest.value[c.id]!.mem_usage) }}</div>
+                        <div class="progress progress-xs mt-1 d-none d-md-flex">
+                          <div class="progress-bar" :style="{ width: `${Math.min(100, (live.latest.value[c.id]!.mem_usage / live.latest.value[c.id]!.mem_limit) * 100)}%` }"></div>
+                        </div>
+                      </template>
+                      <span v-else class="text-secondary">-</span>
+                    </td>
                     <td class="text-end">
-                      <div class="btn-list justify-content-md-end">
-                        <button v-if="c.state === 'running'" class="btn btn-sm" type="button" :disabled="busy === c.id" @click="act(c, 'stop')"><IconPlayerStop :size="16" class="icon" />Hentikan</button>
-                        <button v-else class="btn btn-sm" type="button" :disabled="busy === c.id" @click="act(c, 'start')"><IconPlayerPlay :size="16" class="icon" />Jalankan</button>
-                        <button class="btn btn-sm" type="button" :disabled="busy === c.id" @click="act(c, 'restart')"><IconRefresh :size="16" class="icon" />Restart</button>
-                        <button class="btn btn-sm btn-ghost-danger" type="button" :disabled="busy === c.id" @click="act(c, 'remove')"><IconTrash :size="16" class="icon" />Hapus</button>
+                      <div class="d-inline-flex gap-1">
+                        <button v-if="c.state === 'running'" class="btn btn-icon" type="button" :disabled="busy === c.id" :aria-label="`Hentikan ${c.name}`" title="Hentikan" @click="act(c, 'stop')"><IconPlayerStop :size="18" /></button>
+                        <button v-else class="btn btn-icon btn-primary" type="button" :disabled="busy === c.id" :aria-label="`Jalankan ${c.name}`" title="Jalankan" @click="act(c, 'start')"><IconPlayerPlay :size="18" /></button>
+                        <Dropdown :label="`Aksi lain untuk ${c.name}`" end class="btn btn-icon" :disabled="busy === c.id">
+                          <template #toggle><IconDotsVertical :size="18" /></template>
+                          <button type="button" class="dropdown-item" role="menuitem" @click="act(c, 'restart')"><IconRefresh :size="18" class="icon dropdown-item-icon" />Restart</button>
+                          <RouterLink :to="`/containers/${c.id}?tab=logs`" class="dropdown-item" role="menuitem"><IconFileText :size="18" class="icon dropdown-item-icon" />Lihat log</RouterLink>
+                          <RouterLink v-if="c.state === 'running'" :to="`/containers/${c.id}?tab=terminal`" class="dropdown-item" role="menuitem"><IconTerminal2 :size="18" class="icon dropdown-item-icon" />Terminal</RouterLink>
+                          <div class="dropdown-divider"></div>
+                          <button type="button" class="dropdown-item text-danger" role="menuitem" @click="act(c, 'remove')"><IconTrash :size="18" class="icon dropdown-item-icon" />Hapus</button>
+                        </Dropdown>
                       </div>
                     </td>
                   </tr>
@@ -121,10 +156,11 @@ async function act(c: Container, action: 'start' | 'stop' | 'restart' | 'remove'
 /* Each compose group is its own table; fixed widths keep columns aligned across groups. */
 @media (min-width: 768px) {
   .containers { table-layout: fixed; }
-  .containers th:nth-child(1) { width: 24%; }
-  .containers th:nth-child(2) { width: 18%; }
-  .containers th:nth-child(3) { width: 18%; }
+  .containers th:nth-child(1) { width: 30%; }
+  .containers th:nth-child(2) { width: 20%; }
+  .containers th:nth-child(3) { width: 14%; }
   .containers th:nth-child(4) { width: 12%; }
-  .containers th:nth-child(5) { width: 28%; }
+  .containers th:nth-child(5) { width: 12%; }
+  .containers th:nth-child(6) { width: 12%; }
 }
 </style>

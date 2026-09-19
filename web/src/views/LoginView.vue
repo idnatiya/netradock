@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api, currentUser } from '@/api'
+import BrandLogo from '@/components/BrandLogo.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -34,7 +35,7 @@ async function submit() {
   <div class="page page-center">
     <div class="container container-tight py-4">
       <div class="text-center mb-4">
-        <span class="navbar-brand fs-2">Netradock</span>
+        <BrandLogo class="fs-2" />
       </div>
       <div class="card card-md">
         <div class="card-body">

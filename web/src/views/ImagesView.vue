@@ -11,6 +11,9 @@ import { useLoad } from '@/useLoad'
 const { data, error, loading, reload } = useLoad(() => api<Image[]>('GET', '/images'))
 const sorted = computed(() => [...(data.value ?? [])].sort((a, b) => b.created - a.created))
 const totalSize = computed(() => (data.value ?? []).reduce((n, i) => n + i.size, 0))
+const unused = computed(() => (data.value ?? []).filter((i) => i.containers === 0))
+const unusedSize = computed(() => unused.value.reduce((n, i) => n + i.size, 0))
+const untagged = computed(() => (data.value ?? []).filter((i) => i.tags.length === 0).length)
 
 const ref_ = ref('')
 const pulling = ref(false)
@@ -56,6 +59,20 @@ async function remove(i: Image) {
 
   <div class="page-body">
     <div class="container-xl">
+      <div v-if="data" class="row row-cards mb-3">
+        <div class="col-6 col-lg-3"><div class="card card-sm"><div class="card-body">
+          <div class="subheader">Total image</div><div class="h2 mb-0">{{ data.length }}</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card card-sm"><div class="card-body">
+          <div class="subheader">Ukuran di disk</div><div class="h2 mb-0">{{ bytes(totalSize) }}</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card card-sm"><div class="card-body">
+          <div class="subheader">Tidak dipakai</div><div class="h2 mb-0">{{ unused.length }} <span class="fs-4 text-secondary">· {{ bytes(unusedSize) }}</span></div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card card-sm"><div class="card-body">
+          <div class="subheader">Tanpa tag</div><div class="h2 mb-0">{{ untagged }}</div>
+        </div></div></div>
+      </div>
       <div class="card">
         <LoadState :loading="loading" :error="error" :empty="sorted.length === 0" what="image" @retry="reload">
           <template #empty>
@@ -81,7 +98,7 @@ async function remove(i: Image) {
                     <span v-if="i.containers > 0" class="badge bg-green-lt">{{ i.containers }} container</span>
                     <span v-else class="text-secondary">tidak</span>
                   </td>
-                  <td class="text-end"><button class="btn btn-sm btn-ghost-danger" type="button" @click="remove(i)"><IconTrash :size="16" class="icon" />Hapus</button></td>
+                  <td class="text-end"><button class="btn btn-icon btn-ghost-danger" type="button" :aria-label="`Hapus ${i.tags[0] ?? shortId(i.id)}`" title="Hapus" @click="remove(i)"><IconTrash :size="18" /></button></td>
                 </tr>
               </tbody>
             </table>

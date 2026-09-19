@@ -62,6 +62,7 @@ func (c *RouteConfig) SetupAuthRoute() {
 		}
 		return ctx.Next()
 	})
+	ws.Get("/stats", websocket.New(c.WSController.AllStats))
 	ws.Get("/containers/:id/logs", websocket.New(c.WSController.Logs))
 	ws.Get("/containers/:id/stats", websocket.New(c.WSController.Stats))
 	ws.Get("/containers/:id/exec", websocket.New(c.WSController.Exec))

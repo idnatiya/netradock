@@ -45,7 +45,7 @@ async function remove(n: Network) {
                   <td data-label="Dibuat" class="text-secondary">{{ ago(n.created) }}</td>
                   <td class="text-end">
                     <span v-if="BUILTIN.has(n.name)" class="badge bg-secondary-lt">bawaan Docker</span>
-                    <button v-else class="btn btn-sm btn-ghost-danger" type="button" @click="remove(n)"><IconTrash :size="16" class="icon" />Hapus</button>
+                    <button v-else class="btn btn-icon btn-ghost-danger" type="button" :aria-label="`Hapus ${n.name}`" title="Hapus" @click="remove(n)"><IconTrash :size="18" /></button>
                   </td>
                 </tr>
               </tbody>
