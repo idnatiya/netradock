@@ -40,8 +40,7 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
 </script>
 
 <template>
-  <div class="page">
-    <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+  <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
       <div class="container-fluid">
         <button
           class="navbar-toggler"
@@ -82,8 +81,9 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
           </div>
         </div>
       </div>
-    </aside>
+  </aside>
 
+  <div class="page">
     <header class="navbar navbar-expand-md d-none d-lg-flex d-print-none">
       <div class="container-xl">
         <div class="navbar-nav flex-row order-md-last ms-auto align-items-center gap-2">
@@ -120,5 +120,7 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
 <style scoped>
 .navbar-vertical .navbar-collapse { flex-direction: column; align-items: stretch; }
 .nav-link { width: 100%; }
+/* Tabler floats .nav-link .badge like a notification bubble; here it is an inline count. */
+.navbar .navbar-nav .nav-link .badge { position: static; transform: none; }
 .host { border-top: 1px solid var(--tblr-border-color-translucent); color: var(--tblr-navbar-color); }
 </style>

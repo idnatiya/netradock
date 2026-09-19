@@ -113,14 +113,14 @@ async function act(c: Container, action: 'start' | 'stop' | 'restart' | 'remove'
                     <td data-label="Port"><PortLinks :ports="c.ports" /></td>
                     <td data-label="CPU">
                       <template v-if="live.latest.value[c.id]">
-                        <div class="small">{{ live.latest.value[c.id]!.cpu_percent.toFixed(1) }}%</div>
+                        <span class="small d-md-block">{{ live.latest.value[c.id]!.cpu_percent.toFixed(1) }}%</span>
                         <Sparkline class="d-none d-md-block" :values="live.history[c.id]?.cpu ?? []" :height="20" :floor="5" />
                       </template>
                       <span v-else class="text-secondary">-</span>
                     </td>
                     <td data-label="Memori">
                       <template v-if="live.latest.value[c.id]">
-                        <div class="small">{{ bytes(live.latest.value[c.id]!.mem_usage) }}</div>
+                        <span class="small d-md-block">{{ bytes(live.latest.value[c.id]!.mem_usage) }}</span>
                         <div class="progress progress-xs mt-1 d-none d-md-flex">
                           <div class="progress-bar" :style="{ width: `${Math.min(100, (live.latest.value[c.id]!.mem_usage / live.latest.value[c.id]!.mem_limit) * 100)}%` }"></div>
                         </div>
