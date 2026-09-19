@@ -31,40 +31,36 @@ async function submit() {
 </script>
 
 <template>
-  <main class="login">
-    <form @submit.prevent="submit" :aria-busy="busy">
-      <p class="wordmark">Netradock</p>
-      <h1>Masuk untuk mengelola Docker di server ini</h1>
-      <label>
-        Username
-        <input v-model="username" type="text" name="username" autocomplete="username" required autofocus>
-      </label>
-      <label>
-        Password
-        <input v-model="password" type="password" name="password" autocomplete="current-password" required>
-      </label>
-      <p v-if="error" class="error" role="alert">{{ error }}</p>
-      <button class="btn btn-primary" type="submit" :disabled="busy">{{ busy ? 'Memeriksa...' : 'Masuk' }}</button>
-      <p class="hint">Akun diatur lewat <code>NETRADOCK_USERNAME</code> dan <code>NETRADOCK_PASSWORD</code>.</p>
-    </form>
-  </main>
+  <div class="page page-center">
+    <div class="container container-tight py-4">
+      <div class="text-center mb-4">
+        <span class="navbar-brand fs-2">Netradock</span>
+      </div>
+      <div class="card card-md">
+        <div class="card-body">
+          <h2 class="h2 text-center mb-4">Masuk untuk mengelola Docker</h2>
+          <form autocomplete="on" :aria-busy="busy" @submit.prevent="submit">
+            <div class="mb-3">
+              <label class="form-label" for="username">Username</label>
+              <input id="username" v-model="username" type="text" class="form-control" autocomplete="username" required autofocus>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="password">Password</label>
+              <input id="password" v-model="password" type="password" class="form-control" autocomplete="current-password" required>
+            </div>
+            <div v-if="error" class="alert alert-danger" role="alert">{{ error }}</div>
+            <div class="form-footer">
+              <button type="submit" class="btn btn-primary w-100" :disabled="busy">
+                <span v-if="busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                {{ busy ? 'Memeriksa...' : 'Masuk' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="text-center text-secondary mt-3">
+        Akun diatur lewat <code>NETRADOCK_USERNAME</code> dan <code>NETRADOCK_PASSWORD</code>.
+      </div>
+    </div>
+  </div>
 </template>
-
-<style scoped>
-.login { min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; background: var(--surface-soft); }
-form {
-  width: min(400px, 100%);
-  display: grid;
-  gap: 16px;
-  padding: 32px;
-  background: var(--canvas);
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-lg);
-}
-.wordmark { margin: 0; color: var(--ink); font-weight: 500; font-size: 18px; }
-h1 { font-size: 24px; line-height: 1.3; margin-bottom: 8px; }
-label { display: grid; gap: 6px; color: var(--ink); font-weight: 500; }
-.error { margin: 0; color: var(--coral); }
-.hint { margin: 0; color: var(--muted); font-size: 13px; }
-@media (max-width: 480px) { form { padding: 24px 20px; } }
-</style>

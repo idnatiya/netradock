@@ -27,8 +27,8 @@ const latest = computed(() => props.values.at(-1))
 <template>
   <figure>
     <figcaption>
-      <span>{{ title }}</span>
-      <strong>{{ latest === undefined ? 'menunggu sampel' : format(latest) }}</strong>
+      <span class="subheader">{{ title }}</span>
+      <strong class="h1 mb-0">{{ latest === undefined ? 'menunggu sampel' : format(latest) }}</strong>
     </figcaption>
     <div class="plot">
       <svg
@@ -57,26 +57,26 @@ const latest = computed(() => props.values.at(-1))
 
 <style scoped>
 figure { margin: 0; }
-figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 24px; color: var(--muted); }
-figcaption strong { color: var(--ink); font-weight: 400; font-size: 28px; font-variant-numeric: tabular-nums; }
+figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 24px; }
+figcaption strong { font-weight: 600; font-variant-numeric: tabular-nums; }
 .plot { position: relative; }
 svg { display: block; width: 100%; height: 140px; overflow: visible; touch-action: none; }
-.line { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
-.axis { stroke: var(--border-strong); stroke-width: 1; }
-.grid { stroke: var(--hairline); stroke-width: 1; stroke-dasharray: 4 4; }
-.cross { stroke: var(--muted); stroke-width: 1; }
-.max { position: absolute; top: 0; right: 0; transform: translateY(-110%); font-size: 12px; color: var(--muted); }
+.line { fill: none; stroke: var(--tblr-primary); stroke-width: 2; stroke-linejoin: round; }
+.axis { stroke: var(--tblr-border-color-dark, var(--tblr-border-color)); stroke-width: 1; }
+.grid { stroke: var(--tblr-border-color); stroke-width: 1; stroke-dasharray: 4 4; }
+.cross { stroke: var(--tblr-secondary); stroke-width: 1; }
+.max { position: absolute; top: 0; right: 0; transform: translateY(-110%); font-size: 12px; color: var(--tblr-secondary); }
 .tip {
   position: absolute;
   top: 8px;
   transform: translateX(-50%);
   padding: 4px 8px;
-  background: var(--ink);
-  color: #fff;
-  border-radius: var(--r-sm);
+  background: var(--tblr-body-color);
+  color: var(--tblr-bg-surface);
+  border-radius: var(--tblr-border-radius);
   font-size: 12px;
   white-space: nowrap;
   pointer-events: none;
 }
-.ticks { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.ticks { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--tblr-secondary); }
 </style>

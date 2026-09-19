@@ -74,7 +74,7 @@ defineExpose({ clear: () => term?.clear() })
   min-height: 280px;
   padding: 12px;
   background: #181d26;
-  border-radius: var(--r-md);
+  border-radius: var(--tblr-border-radius);
   overflow: hidden;
 }
 </style>

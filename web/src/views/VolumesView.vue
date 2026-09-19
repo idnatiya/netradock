@@ -2,7 +2,9 @@
 import { computed } from 'vue'
 import { api, type Volume } from '@/api'
 import { removeResource } from '@/actions'
+import { IconDatabase, IconTrash } from '@tabler/icons-vue'
 import LoadState from '@/components/LoadState.vue'
+import PageHeader from '@/components/PageHeader.vue'
 import { useLoad } from '@/useLoad'
 
 const { data, error, loading, reload } = useLoad(() => api<Volume[]>('GET', '/volumes'))
@@ -16,35 +18,36 @@ async function remove(v: Volume) {
 </script>
 
 <template>
-  <main class="page">
-    <div class="page-head">
-      <div>
-        <h1>Volume</h1>
-        <p v-if="data">{{ data.length }} volume</p>
+  <PageHeader pretitle="Docker" title="Volume">
+    <template #meta>
+      <div v-if="data" class="text-secondary mt-1">{{ data.length }} volume</div>
+    </template>
+  </PageHeader>
+  <div class="page-body">
+    <div class="container-xl">
+      <div class="card">
+        <LoadState :loading="loading" :error="error" :empty="sorted.length === 0" what="volume" @retry="reload">
+          <template #empty>
+            <div class="empty-icon"><IconDatabase :size="40" /></div>
+            <p class="empty-title">Belum ada volume</p>
+            <p class="empty-subtitle text-secondary">Volume dibuat otomatis saat container memakai <code>-v nama:/path</code> atau lewat compose.</p>
+          </template>
+          <div class="table-responsive-md">
+            <table class="table card-table table-vcenter table-stack">
+              <thead><tr><th>Nama</th><th>Driver</th><th>Mountpoint</th><th>Dibuat</th><th class="w-1"><span class="visually-hidden">Aksi</span></th></tr></thead>
+              <tbody>
+                <tr v-for="v in sorted" :key="v.name">
+                  <td class="font-monospace text-break-all">{{ v.name }}</td>
+                  <td data-label="Driver">{{ v.driver }}</td>
+                  <td data-label="Mountpoint" class="font-monospace text-secondary text-break-all">{{ v.mountpoint }}</td>
+                  <td data-label="Dibuat" class="text-secondary text-nowrap">{{ date(v.created_at) }}</td>
+                  <td class="text-end"><button class="btn btn-sm btn-ghost-danger" type="button" @click="remove(v)"><IconTrash :size="16" class="icon" />Hapus</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </LoadState>
       </div>
     </div>
-    <LoadState :loading="loading" :error="error" :empty="sorted.length === 0" what="volume" @retry="reload">
-      <template #empty>
-        <strong>Belum ada volume.</strong>
-        Volume dibuat otomatis saat container memakai <code>-v nama:/path</code> atau lewat compose.
-      </template>
-      <table class="table">
-        <thead><tr><th>Nama</th><th>Driver</th><th>Mountpoint</th><th>Dibuat</th><th><span class="sr-only">Aksi</span></th></tr></thead>
-        <tbody>
-          <tr v-for="v in sorted" :key="v.name">
-            <td class="mono name">{{ v.name }}</td>
-            <td data-label="Driver">{{ v.driver }}</td>
-            <td data-label="Mountpoint" class="mono sub path">{{ v.mountpoint }}</td>
-            <td data-label="Dibuat">{{ date(v.created_at) }}</td>
-            <td class="actions"><button class="btn btn-sm btn-danger" type="button" @click="remove(v)">Hapus</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </LoadState>
-  </main>
+  </div>
 </template>
-
-<style scoped>
-.name, .path { overflow-wrap: anywhere; max-width: 360px; }
-@media (max-width: 767px) { .name, .path { max-width: none; } }
-</style>

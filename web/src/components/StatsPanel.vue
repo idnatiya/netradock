@@ -40,24 +40,20 @@ const pct = (v: number) => `${v.toFixed(1)}%`
 
 <template>
   <div>
-    <p v-if="status" class="status" role="status">{{ status }}</p>
-    <div class="charts">
-      <LineChart title="CPU" :values="cpu" :capacity="CAPACITY" :format="pct" :floor="5" />
-      <LineChart title="Memori" :values="mem" :capacity="CAPACITY" :format="bytes" :floor="16 * 1024 * 1024" />
+    <div v-if="status" class="text-secondary mb-3" role="status">{{ status }}</div>
+    <div class="row row-cards">
+      <div class="col-md-6">
+        <div class="card"><div class="card-body"><LineChart title="CPU" :values="cpu" :capacity="CAPACITY" :format="pct" :floor="5" /></div></div>
+      </div>
+      <div class="col-md-6">
+        <div class="card"><div class="card-body"><LineChart title="Memori" :values="mem" :capacity="CAPACITY" :format="bytes" :floor="16 * 1024 * 1024" /></div></div>
+      </div>
     </div>
-    <dl v-if="last" class="facts">
-      <div><dt>Batas memori</dt><dd>{{ bytes(last.mem_limit) }}</dd></div>
-      <div><dt>Memori terpakai</dt><dd>{{ ((last.mem_usage / last.mem_limit) * 100).toFixed(1) }}% dari batas</dd></div>
-      <div><dt>Jaringan masuk</dt><dd>{{ bytes(rate.rx) }}/dtk · total {{ bytes(last.net_rx) }}</dd></div>
-      <div><dt>Jaringan keluar</dt><dd>{{ bytes(rate.tx) }}/dtk · total {{ bytes(last.net_tx) }}</dd></div>
-    </dl>
+    <div v-if="last" class="datagrid mt-4">
+      <div class="datagrid-item"><div class="datagrid-title">Batas memori</div><div class="datagrid-content">{{ bytes(last.mem_limit) }}</div></div>
+      <div class="datagrid-item"><div class="datagrid-title">Memori terpakai</div><div class="datagrid-content">{{ ((last.mem_usage / last.mem_limit) * 100).toFixed(1) }}% dari batas</div></div>
+      <div class="datagrid-item"><div class="datagrid-title">Jaringan masuk</div><div class="datagrid-content">{{ bytes(rate.rx) }}/dtk · total {{ bytes(last.net_rx) }}</div></div>
+      <div class="datagrid-item"><div class="datagrid-title">Jaringan keluar</div><div class="datagrid-content">{{ bytes(rate.tx) }}/dtk · total {{ bytes(last.net_tx) }}</div></div>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.status { color: var(--muted); margin: 0 0 16px; }
-.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 40px 48px; padding-top: 16px; }
-.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px 32px; margin: 32px 0 0; padding-top: 24px; border-top: 1px solid var(--hairline); }
-dt { color: var(--muted); }
-dd { margin: 2px 0 0; color: var(--ink); font-variant-numeric: tabular-nums; }
-</style>

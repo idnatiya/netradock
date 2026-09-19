@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { IconBox, IconPlayerPlay, IconPlayerStop, IconRefresh, IconSearch, IconTrash } from '@tabler/icons-vue'
 import { api, type Container } from '@/api'
 import { containerAction } from '@/actions'
 import LoadState from '@/components/LoadState.vue'
+import PageHeader from '@/components/PageHeader.vue'
 import PortLinks from '@/components/PortLinks.vue'
+import StateBadge from '@/components/StateBadge.vue'
 import { useLoad } from '@/useLoad'
 
 const { data, error, loading, reload } = useLoad(() => api<Container[]>('GET', '/containers?all=true'), 5000)
@@ -38,75 +41,90 @@ async function act(c: Container, action: 'start' | 'stop' | 'restart' | 'remove'
 </script>
 
 <template>
-  <main class="page">
-    <div class="page-head">
-      <div>
-        <h1>Container</h1>
-        <p v-if="data">{{ running }} berjalan, {{ total - running }} tidak berjalan</p>
+  <PageHeader pretitle="Docker" title="Container">
+    <template #meta>
+      <div v-if="data" class="text-secondary mt-1">{{ running }} berjalan, {{ total - running }} tidak berjalan</div>
+    </template>
+    <template #actions>
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <div class="input-icon flex-grow-1">
+          <span class="input-icon-addon"><IconSearch :size="18" /></span>
+          <input v-model="query" type="search" class="form-control" placeholder="Cari nama atau image" aria-label="Cari container">
+        </div>
+        <label class="form-check form-switch mb-0">
+          <input v-model="showStopped" class="form-check-input" type="checkbox">
+          <span class="form-check-label">Tampilkan yang berhenti</span>
+        </label>
       </div>
-      <div class="filters">
-        <label class="sr-only" for="q">Cari container</label>
-        <input id="q" v-model="query" type="search" placeholder="Cari nama atau image">
-        <label class="check"><input v-model="showStopped" type="checkbox"> Tampilkan yang berhenti</label>
+    </template>
+  </PageHeader>
+
+  <div class="page-body">
+    <div class="container-xl">
+      <div v-if="loading || error || groups.length === 0" class="card">
+        <LoadState :loading="loading" :error="error" :empty="groups.length === 0" what="container" @retry="reload">
+          <template #empty>
+            <div class="empty-icon"><IconBox :size="40" /></div>
+            <template v-if="total === 0">
+              <p class="empty-title">Belum ada container</p>
+              <p class="empty-subtitle text-secondary">Jalankan container lewat <code>docker run</code> atau <code>docker compose up</code> di server, nanti muncul di sini.</p>
+            </template>
+            <template v-else>
+              <p class="empty-title">Tidak ada yang cocok</p>
+              <p class="empty-subtitle text-secondary">Ubah kata kunci atau nyalakan "Tampilkan yang berhenti".</p>
+              <div class="empty-action">
+                <button class="btn" type="button" @click="query = ''; showStopped = true">Hapus filter</button>
+              </div>
+            </template>
+          </template>
+        </LoadState>
+      </div>
+
+      <div class="row row-cards">
+        <div v-for="[project, items] in groups" :key="project" class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title text-break-all">{{ project || 'Tanpa compose project' }}</h3>
+              <span class="badge bg-secondary-lt ms-2">{{ items.length }}</span>
+            </div>
+            <div class="table-responsive-md">
+              <table class="table card-table table-vcenter table-stack containers">
+                <thead>
+                  <tr><th>Nama</th><th>Status</th><th>Image</th><th>Port</th><th><span class="visually-hidden">Aksi</span></th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="c in items" :key="c.id" :aria-busy="busy === c.id">
+                    <td><RouterLink :to="`/containers/${c.id}`" class="fw-medium text-break-all">{{ c.name }}</RouterLink></td>
+                    <td data-label="Status"><StateBadge :state="c.state" :label="c.status" /></td>
+                    <td data-label="Image" class="text-secondary font-monospace text-break-all">{{ c.image }}</td>
+                    <td data-label="Port"><PortLinks :ports="c.ports" /></td>
+                    <td class="text-end">
+                      <div class="btn-list justify-content-md-end">
+                        <button v-if="c.state === 'running'" class="btn btn-sm" type="button" :disabled="busy === c.id" @click="act(c, 'stop')"><IconPlayerStop :size="16" class="icon" />Hentikan</button>
+                        <button v-else class="btn btn-sm" type="button" :disabled="busy === c.id" @click="act(c, 'start')"><IconPlayerPlay :size="16" class="icon" />Jalankan</button>
+                        <button class="btn btn-sm" type="button" :disabled="busy === c.id" @click="act(c, 'restart')"><IconRefresh :size="16" class="icon" />Restart</button>
+                        <button class="btn btn-sm btn-ghost-danger" type="button" :disabled="busy === c.id" @click="act(c, 'remove')"><IconTrash :size="16" class="icon" />Hapus</button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
-    <LoadState :loading="loading" :error="error" :empty="groups.length === 0" what="container" @retry="reload">
-      <template #empty>
-        <template v-if="total === 0">
-          <strong>Belum ada container.</strong>
-          Jalankan container lewat <code>docker run</code> atau <code>docker compose up</code> di server, nanti muncul di sini.
-        </template>
-        <template v-else>
-          <strong>Tidak ada yang cocok.</strong>
-          Ubah kata kunci atau centang "Tampilkan yang berhenti".
-        </template>
-      </template>
-
-      <section v-for="[project, items] in groups" :key="project" class="group">
-        <h2>{{ project || 'Tanpa compose project' }} <span class="count">{{ items.length }}</span></h2>
-        <table class="table">
-          <thead>
-            <tr><th>Nama</th><th>Status</th><th>Image</th><th>Port</th><th><span class="sr-only">Aksi</span></th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="c in items" :key="c.id" :aria-busy="busy === c.id">
-              <td><RouterLink :to="`/containers/${c.id}`" class="name">{{ c.name }}</RouterLink></td>
-              <td data-label="Status"><span class="state" :class="c.state">{{ c.status }}</span></td>
-              <td data-label="Image" class="mono image">{{ c.image }}</td>
-              <td data-label="Port"><PortLinks :ports="c.ports" /></td>
-              <td class="actions">
-                <button v-if="c.state === 'running'" class="btn btn-sm" type="button" :disabled="busy === c.id" @click="act(c, 'stop')">Hentikan</button>
-                <button v-else class="btn btn-sm" type="button" :disabled="busy === c.id" @click="act(c, 'start')">Jalankan</button>
-                <button class="btn btn-sm" type="button" :disabled="busy === c.id" @click="act(c, 'restart')">Restart</button>
-                <button class="btn btn-sm btn-danger" type="button" :disabled="busy === c.id" @click="act(c, 'remove')">Hapus</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-    </LoadState>
-  </main>
+  </div>
 </template>
 
 <style scoped>
-.filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
-.filters input[type='search'] { width: 260px; }
-.group + .group { margin-top: 40px; }
 /* Each compose group is its own table; fixed widths keep columns aligned across groups. */
-.table { table-layout: fixed; }
-.table th:nth-child(1) { width: 26%; }
-.table th:nth-child(2) { width: 18%; }
-.table th:nth-child(3) { width: 20%; }
-.table th:nth-child(4) { width: 13%; }
-.table th:nth-child(5) { width: 23%; }
-.group h2 { font-size: 16px; font-weight: 500; margin-bottom: 4px; overflow-wrap: anywhere; }
-.count { color: var(--muted); font-weight: 400; margin-left: 4px; }
-.name { font-weight: 500; overflow-wrap: anywhere; }
-.image { overflow-wrap: anywhere; }
-.actions .btn + .btn { margin-left: 4px; }
-@media (max-width: 767px) {
-  .filters, .filters input[type='search'] { width: 100%; }
-  .actions .btn + .btn { margin-left: 0; }
+@media (min-width: 768px) {
+  .containers { table-layout: fixed; }
+  .containers th:nth-child(1) { width: 24%; }
+  .containers th:nth-child(2) { width: 18%; }
+  .containers th:nth-child(3) { width: 18%; }
+  .containers th:nth-child(4) { width: 12%; }
+  .containers th:nth-child(5) { width: 28%; }
 }
 </style>

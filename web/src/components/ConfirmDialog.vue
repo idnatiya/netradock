@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
+import { IconAlertTriangle } from '@tabler/icons-vue'
 import { pending } from '@/confirm'
 
 const dialog = ref<HTMLDialogElement>()
@@ -21,29 +22,36 @@ function close(ok: boolean) {
 </script>
 
 <template>
-  <!-- Native dialog: focus trap and Escape come from the browser. -->
-  <dialog ref="dialog" aria-labelledby="confirm-title" @cancel.prevent="close(false)">
-    <template v-if="pending">
-      <h2 id="confirm-title">{{ pending.title }}</h2>
-      <p>{{ pending.body }}</p>
-      <div class="row">
-        <button class="btn" type="button" autofocus @click="close(false)">Batal</button>
-        <button class="btn btn-primary" type="button" @click="close(true)">{{ pending.action }}</button>
+  <!-- Native dialog: focus trap and Escape come from the browser; Tabler supplies the modal look. -->
+  <dialog ref="dialog" class="confirm" aria-labelledby="confirm-title" @cancel.prevent="close(false)">
+    <div v-if="pending" class="modal-content">
+      <div class="modal-status bg-danger"></div>
+      <div class="modal-body text-center py-4">
+        <IconAlertTriangle :size="40" class="text-danger mb-2" />
+        <h3 id="confirm-title">{{ pending.title }}</h3>
+        <div class="text-secondary text-break-all">{{ pending.body }}</div>
       </div>
-    </template>
+      <div class="modal-footer">
+        <div class="w-100">
+          <div class="row g-2">
+            <div class="col"><button class="btn w-100" type="button" autofocus @click="close(false)">Batal</button></div>
+            <div class="col"><button class="btn btn-danger w-100" type="button" @click="close(true)">{{ pending.action }}</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </dialog>
 </template>
 
 <style scoped>
-dialog {
-  width: min(440px, calc(100vw - 32px));
+.confirm {
+  width: min(380px, calc(100vw - 32px));
+  padding: 0;
   border: 0;
-  border-radius: var(--r-lg);
-  padding: 24px;
-  color: var(--body);
-  box-shadow: 0 12px 40px rgb(24 29 38 / 0.2); /* the only floating layer in the app */
+  border-radius: var(--tblr-border-radius-lg);
+  background: transparent;
+  color: var(--tblr-body-color);
 }
-dialog::backdrop { background: rgb(24 29 38 / 0.45); }
-p { margin: 8px 0 24px; overflow-wrap: anywhere; }
-.row { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.confirm .modal-content { position: relative; background: var(--tblr-bg-surface); }
+.confirm::backdrop { background: rgb(24 36 51 / 0.5); }
 </style>

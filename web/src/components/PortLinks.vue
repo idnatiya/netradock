@@ -26,14 +26,14 @@ const shown = computed(() => {
         :href="`http://${host}:${p.public_port}`"
         target="_blank"
         rel="noopener"
-        class="mono"
+        class="font-monospace"
       >{{ p.public_port }}:{{ p.private_port }}</a>
-      <span v-else class="mono">{{ p.public_port ? `${p.public_port}:` : '' }}{{ p.private_port }}/{{ p.type }}</span>
+      <span v-else class="font-monospace">{{ p.public_port ? `${p.public_port}:` : '' }}{{ p.private_port }}/{{ p.type }}</span>
     </template>
   </span>
 </template>
 
 <style scoped>
 .ports { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; }
-.none { color: var(--muted); }
+.none { color: var(--tblr-secondary); }
 </style>

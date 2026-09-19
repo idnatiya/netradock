@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { IconCopy, IconPlayerPlay, IconPlayerStop, IconRefresh, IconTerminal2, IconTrash } from '@tabler/icons-vue'
 import { api, notify } from '@/api'
 import { containerAction } from '@/actions'
 import LoadState from '@/components/LoadState.vue'
+import PageHeader from '@/components/PageHeader.vue'
+import StateBadge from '@/components/StateBadge.vue'
 import StatsPanel from '@/components/StatsPanel.vue'
 import XTerm from '@/components/XTerm.vue'
 import { useLoad } from '@/useLoad'
@@ -84,83 +87,96 @@ async function copyInspect() {
 </script>
 
 <template>
-  <main class="page">
-    <p class="crumb"><RouterLink to="/containers">Container</RouterLink> / {{ name || id.slice(0, 12) }}</p>
-    <LoadState :loading="loading" :error="error" :empty="!data" what="container" @retry="reload">
-      <template v-if="data">
-        <div class="page-head">
-          <div>
-            <h1>{{ name }}</h1>
-            <p>
-              <span class="state" :class="state">{{ state }}</span>
-              <span v-if="state === 'exited'"> dengan kode {{ data.State.ExitCode }}</span>
-              <span v-if="data.State.Health"> · health: {{ data.State.Health.Status }}</span>
-              <span v-if="data.RestartCount"> · restart {{ data.RestartCount }}x</span>
-            </p>
-            <p class="mono image">{{ data.Config.Image }}</p>
-          </div>
-          <div class="head-actions">
-            <button v-if="running" class="btn" type="button" :disabled="busy" @click="act('stop')">Hentikan</button>
-            <button v-else class="btn btn-primary" type="button" :disabled="busy" @click="act('start')">Jalankan</button>
-            <button class="btn" type="button" :disabled="busy" @click="act('restart')">Restart</button>
-            <button class="btn btn-danger" type="button" :disabled="busy" @click="act('remove')">Hapus</button>
-          </div>
+  <PageHeader pretitle="Container" :title="name || id.slice(0, 12)">
+    <template #meta>
+      <div v-if="data" class="d-flex flex-wrap align-items-center gap-2 mt-1 text-secondary">
+        <StateBadge :state="state" :label="state === 'exited' ? `exited, kode ${data.State.ExitCode}` : state" />
+        <span v-if="data.State.Health" class="badge bg-secondary-lt">health: {{ data.State.Health.Status }}</span>
+        <span v-if="data.RestartCount" class="badge bg-yellow-lt">restart {{ data.RestartCount }}x</span>
+        <span class="font-monospace text-break-all">{{ data.Config.Image }}</span>
+      </div>
+    </template>
+    <template v-if="data" #actions>
+      <div class="btn-list">
+        <button v-if="running" class="btn" type="button" :disabled="busy" @click="act('stop')"><IconPlayerStop :size="18" class="icon" />Hentikan</button>
+        <button v-else class="btn btn-primary" type="button" :disabled="busy" @click="act('start')"><IconPlayerPlay :size="18" class="icon" />Jalankan</button>
+        <button class="btn" type="button" :disabled="busy" @click="act('restart')"><IconRefresh :size="18" class="icon" />Restart</button>
+        <button class="btn btn-ghost-danger" type="button" :disabled="busy" @click="act('remove')"><IconTrash :size="18" class="icon" />Hapus</button>
+      </div>
+    </template>
+  </PageHeader>
+
+  <div class="page-body">
+    <div class="container-xl">
+      <div v-if="loading || !data" class="card">
+        <LoadState :loading="loading" :error="error" :empty="!data" what="container" @retry="reload">
+          <template #empty>
+            <p class="empty-title">Container tidak ditemukan</p>
+            <div class="empty-action"><RouterLink to="/containers" class="btn">Kembali ke daftar container</RouterLink></div>
+          </template>
+        </LoadState>
+      </div>
+
+      <div v-else class="card">
+        <div v-if="error" class="alert alert-warning m-3" role="alert">Data mungkin sudah lama: {{ error }}</div>
+        <div class="card-header">
+          <ul class="nav nav-tabs card-header-tabs flex-nowrap overflow-auto" role="tablist" aria-label="Detail container" @keydown="onTabKey">
+            <li v-for="t in tabs" :key="t.key" class="nav-item" role="presentation">
+              <button
+                :id="`tab-${t.key}`"
+                class="nav-link"
+                :class="{ active: tab === t.key }"
+                role="tab"
+                type="button"
+                :aria-selected="tab === t.key"
+                :aria-controls="`panel-${t.key}`"
+                :tabindex="tab === t.key ? 0 : -1"
+                @click="select(t.key)"
+              >{{ t.label }}</button>
+            </li>
+          </ul>
         </div>
 
-        <div class="tabs" role="tablist" aria-label="Detail container" @keydown="onTabKey">
-          <button
-            v-for="t in tabs"
-            :id="`tab-${t.key}`"
-            :key="t.key"
-            role="tab"
-            type="button"
-            :aria-selected="tab === t.key"
-            :aria-controls="`panel-${t.key}`"
-            :tabindex="tab === t.key ? 0 : -1"
-            @click="select(t.key)"
-          >{{ t.label }}</button>
-        </div>
-
-        <section v-if="tab === 'logs'" id="panel-logs" role="tabpanel" aria-labelledby="tab-logs">
-          <div class="toolbar">
-            <label>Baris awal
-              <select v-model="tail" @change="logKey++">
-                <option value="100">100</option>
-                <option value="200">200</option>
-                <option value="1000">1000</option>
-                <option value="5000">5000</option>
-              </select>
-            </label>
-            <button class="btn btn-sm" type="button" @click="logEnded = ''; logKey++">Muat ulang log</button>
+        <div v-if="tab === 'logs'" id="panel-logs" class="card-body" role="tabpanel" aria-labelledby="tab-logs">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <label class="d-flex align-items-center gap-2 mb-0" for="tail">Baris awal</label>
+            <select id="tail" v-model="tail" class="form-select w-auto" @change="logKey++">
+              <option value="100">100</option>
+              <option value="200">200</option>
+              <option value="1000">1000</option>
+              <option value="5000">5000</option>
+            </select>
+            <button class="btn" type="button" @click="logEnded = ''; logKey++"><IconRefresh :size="18" class="icon" />Muat ulang log</button>
           </div>
           <XTerm :key="`${id}-${logKey}`" :path="`/containers/${id}/logs?tail=${tail}`" label="Log container" @closed="(r) => (logEnded = r || 'Stream log selesai.')" />
-          <p v-if="logEnded" class="ended" role="status">{{ logEnded }}</p>
-        </section>
+          <div v-if="logEnded" class="text-secondary mt-2" role="status">{{ logEnded }}</div>
+        </div>
 
-        <section v-else-if="tab === 'stats'" id="panel-stats" role="tabpanel" aria-labelledby="tab-stats">
+        <div v-else-if="tab === 'stats'" id="panel-stats" class="card-body" role="tabpanel" aria-labelledby="tab-stats">
           <StatsPanel v-if="running" :key="id" :id="id" />
           <div v-else class="empty">
-            <strong>Container tidak berjalan.</strong>
-            Statistik hanya tersedia saat container berjalan.
+            <p class="empty-title">Container tidak berjalan</p>
+            <p class="empty-subtitle text-secondary">Statistik hanya tersedia saat container berjalan.</p>
+            <div class="empty-action"><button class="btn btn-primary" type="button" :disabled="busy" @click="act('start')"><IconPlayerPlay :size="18" class="icon" />Jalankan</button></div>
           </div>
-        </section>
+        </div>
 
-        <section v-else-if="tab === 'terminal'" id="panel-terminal" role="tabpanel" aria-labelledby="tab-terminal">
+        <div v-else-if="tab === 'terminal'" id="panel-terminal" class="card-body" role="tabpanel" aria-labelledby="tab-terminal">
           <div v-if="!running" class="empty">
-            <strong>Container tidak berjalan.</strong>
-            Jalankan container dulu untuk membuka shell.
+            <p class="empty-title">Container tidak berjalan</p>
+            <p class="empty-subtitle text-secondary">Jalankan container dulu untuk membuka shell.</p>
+            <div class="empty-action"><button class="btn btn-primary" type="button" :disabled="busy" @click="act('start')"><IconPlayerPlay :size="18" class="icon" />Jalankan</button></div>
           </div>
           <template v-else>
-            <div class="toolbar">
-              <label>Shell
-                <select v-model="shell" :disabled="execOn">
-                  <option>/bin/sh</option>
-                  <option>/bin/bash</option>
-                  <option>/bin/ash</option>
-                </select>
-              </label>
-              <button v-if="!execOn" class="btn btn-primary btn-sm" type="button" @click="connect">Buka shell</button>
-              <button v-else class="btn btn-sm" type="button" @click="execOn = false">Putuskan</button>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+              <label class="mb-0" for="shell">Shell</label>
+              <select id="shell" v-model="shell" class="form-select w-auto" :disabled="execOn">
+                <option>/bin/sh</option>
+                <option>/bin/bash</option>
+                <option>/bin/ash</option>
+              </select>
+              <button v-if="!execOn" class="btn btn-primary" type="button" @click="connect"><IconTerminal2 :size="18" class="icon" />Buka shell</button>
+              <button v-else class="btn" type="button" @click="execOn = false">Putuskan</button>
             </div>
             <XTerm
               v-if="execOn"
@@ -170,58 +186,18 @@ async function copyInspect() {
               label="Terminal container"
               @closed="(r) => { execOn = false; execEnded = r || 'Shell ditutup.' }"
             />
-            <p v-if="execEnded" class="ended" role="status">{{ execEnded }}</p>
-            <p v-if="!execOn && !execEnded" class="hint">Perintah berjalan di dalam container dengan user default image. Hati-hati: tidak ada batasan perintah.</p>
+            <div v-if="execEnded" class="text-secondary" role="status">{{ execEnded }}</div>
+            <div v-if="!execOn && !execEnded" class="alert alert-warning mb-0">
+              Perintah berjalan di dalam container dengan user default image, tanpa batasan perintah.
+            </div>
           </template>
-        </section>
+        </div>
 
-        <section v-else id="panel-inspect" role="tabpanel" aria-labelledby="tab-inspect">
-          <div class="toolbar"><button class="btn btn-sm" type="button" @click="copyInspect">Salin JSON</button></div>
-          <pre class="json" tabindex="0">{{ JSON.stringify(data, null, 2) }}</pre>
-        </section>
-      </template>
-    </LoadState>
-  </main>
+        <div v-else id="panel-inspect" class="card-body" role="tabpanel" aria-labelledby="tab-inspect">
+          <div class="mb-3"><button class="btn" type="button" @click="copyInspect"><IconCopy :size="18" class="icon" />Salin JSON</button></div>
+          <pre class="json-view" tabindex="0">{{ JSON.stringify(data, null, 2) }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
-
-<style scoped>
-.crumb { margin: 0 0 12px; color: var(--muted); overflow-wrap: anywhere; }
-h1 { overflow-wrap: anywhere; }
-.image { margin-top: 4px; overflow-wrap: anywhere; }
-.head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--hairline); margin-bottom: 24px; overflow-x: auto; }
-.tabs button {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 0;
-  background: none;
-  color: var(--body);
-  font: 500 14px var(--font);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.tabs button[aria-selected='true'] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }
-.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
-.toolbar label { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); }
-select {
-  height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-sm);
-  background: var(--canvas);
-  color: var(--ink);
-  font: inherit;
-}
-.ended, .hint { color: var(--muted); margin: 12px 0 0; }
-.json {
-  margin: 0;
-  max-height: 70vh;
-  overflow: auto;
-  padding: 16px;
-  background: var(--surface-soft);
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-md);
-  font: 12px/1.5 var(--mono);
-  color: var(--ink);
-}
-</style>
