@@ -31,6 +31,8 @@ func errorHandler(ctx *fiber.Ctx, err error) error {
 		code = fiber.StatusConflict
 	case cerrdefs.IsInvalidArgument(err):
 		code = fiber.StatusBadRequest
+	case cerrdefs.IsPermissionDenied(err):
+		code = fiber.StatusForbidden
 	}
 	return ctx.Status(code).JSON(fiber.Map{"errors": err.Error()})
 }
