@@ -27,9 +27,13 @@ type BootstrapConfig struct {
 }
 
 func Bootstrap(config *BootstrapConfig) {
-	username, password := config.Config.GetString("username"), config.Config.GetString("password")
-	if username == "" || password == "" {
-		config.Log.Fatal("NETRADOCK_USERNAME and NETRADOCK_PASSWORD must be set")
+	username := config.Config.GetString("username")
+	password, hash := config.Config.GetString("password"), config.Config.GetString("password_hash")
+	if username == "" || (password == "" && hash == "") {
+		config.Log.Fatal("NETRADOCK_USERNAME and NETRADOCK_PASSWORD (or NETRADOCK_PASSWORD_HASH) must be set")
+	}
+	if hash == "" {
+		config.Log.Warn("NETRADOCK_PASSWORD is stored in plaintext; prefer NETRADOCK_PASSWORD_HASH with a bcrypt hash")
 	}
 	secret := []byte(config.Config.GetString("secret"))
 	if len(secret) == 0 {
@@ -40,7 +44,7 @@ func Bootstrap(config *BootstrapConfig) {
 	dockerRepository := repository.NewDockerRepository(config.Docker)
 
 	ttl := time.Duration(config.Config.GetInt("session.hours")) * time.Hour
-	authUseCase := usecase.NewAuthUseCase(config.Validate, username, password, secret, ttl)
+	authUseCase := usecase.NewAuthUseCase(config.Validate, username, password, hash, secret, ttl)
 	containerUseCase := usecase.NewContainerUseCase(config.Log, dockerRepository)
 	dockerUseCase := usecase.NewDockerUseCase(config.Log, config.Validate, dockerRepository)
 
@@ -48,10 +52,11 @@ func Bootstrap(config *BootstrapConfig) {
 		App:                 config.App,
 		AuthMiddleware:      middleware.NewAuth(authUseCase),
 		SameOrigin:          middleware.NewSameOrigin(),
+		SameOriginWrites:    middleware.NewSameOriginWrites(),
 		AuthController:      controller.NewAuthController(config.Log, authUseCase, config.Config.GetBool("secure_cookie")),
 		ContainerController: controller.NewContainerController(config.Log, containerUseCase),
 		DockerController:    controller.NewDockerController(config.Log, dockerUseCase),
-		WSController:        controller.NewWSController(config.Log, containerUseCase),
+		WSController:        controller.NewWSController(config.Log, containerUseCase, authUseCase),
 		Web:                 config.Web,
 	}
 	routeConfig.Setup()

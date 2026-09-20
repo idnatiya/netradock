@@ -5,8 +5,9 @@ import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 import { wsURL } from '@/api'
 
-// interactive: stdin goes out as binary frames and size changes as JSON text frames (see ws_controller.go).
-const props = defineProps<{ path: string; interactive?: boolean; label: string }>()
+// interactive: stdin goes out as binary frames and control messages as JSON text frames (see ws_controller.go).
+// cmd is sent in the opening control message rather than the URL, so it never reaches proxy access logs.
+const props = defineProps<{ path: string; interactive?: boolean; label: string; cmd?: string[] }>()
 const emit = defineEmits<{ closed: [reason: string] }>()
 
 const el = ref<HTMLDivElement>()
@@ -39,8 +40,11 @@ onMounted(() => {
   ws = new WebSocket(wsURL(props.path))
   ws.binaryType = 'arraybuffer'
   ws.onopen = () => {
+    if (props.interactive) {
+      ws?.send(JSON.stringify({ type: 'start', cmd: props.cmd }))
+      term?.focus()
+    }
     sendSize()
-    if (props.interactive) term?.focus()
   }
   ws.onmessage = (e) => term?.write(new Uint8Array(e.data as ArrayBuffer))
   // Normal closure means the stream or shell ended; the parent picks the wording.

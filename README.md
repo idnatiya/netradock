@@ -11,9 +11,15 @@ cp .env.example .env   # set NETRADOCK_USERNAME, NETRADOCK_PASSWORD, NETRADOCK_S
 docker compose up -d --build
 ```
 
-The app listens on `127.0.0.1:8080`. Serve it through an HTTPS reverse proxy (Caddy, nginx) and set `NETRADOCK_SECURE_COOKIE=true` and `NETRADOCK_PROXY_HEADER=X-Forwarded-For`. The proxy must forward WebSocket upgrades for `/ws/` and keep the original `Host` header.
+The app listens on `127.0.0.1:8080`. Serve it through an HTTPS reverse proxy (Caddy, nginx). The proxy must forward WebSocket upgrades for `/ws/`, keep the original `Host` header, and overwrite `X-Forwarded-For` rather than pass a client-supplied one.
 
-**Security:** anyone logged in has root-equivalent access to the host through the Docker socket, including a shell inside any container. Use a long password and do not expose the port publicly without TLS.
+Set `NETRADOCK_PROXY_HEADER=X-Forwarded-For` so the login rate limit sees real client IPs. Leave `NETRADOCK_SECURE_COOKIE` at its default (`true`); setting it to `false` sends the session cookie over plain HTTP.
+
+**Security:** anyone logged in has root-equivalent access to the host through the Docker socket, including a shell inside any container. Use a long random password, prefer `NETRADOCK_PASSWORD_HASH` over `NETRADOCK_PASSWORD`, and do not expose the port publicly without TLS.
+
+Sessions are stateless tokens with no server-side store, so there is no way to revoke one individually. Changing `NETRADOCK_USERNAME`, the password, or `NETRADOCK_SECRET` invalidates all of them at once; live WebSocket streams re-check the session every 30 seconds and close when it stops verifying.
+
+Run `make audit` to check Go and npm dependencies for known vulnerabilities.
 
 ## Development
 

@@ -16,6 +16,7 @@ type RouteConfig struct {
 	App                 *fiber.App
 	AuthMiddleware      fiber.Handler
 	SameOrigin          fiber.Handler
+	SameOriginWrites    fiber.Handler
 	AuthController      *controller.AuthController
 	ContainerController *controller.ContainerController
 	DockerController    *controller.DockerController
@@ -30,12 +31,20 @@ func (c *RouteConfig) Setup() {
 }
 
 func (c *RouteConfig) SetupGuestRoute() {
-	c.App.Post("/api/auth/login", limiter.New(limiter.Config{Max: 5, Expiration: time.Minute}), c.AuthController.Login)
-	c.App.Post("/api/auth/logout", c.AuthController.Logout)
+	// Per-IP limit stops one attacker; the global limit still holds when the proxy header is
+	// missing or spoofed, at a rate a single legitimate user never reaches.
+	perIP := limiter.New(limiter.Config{Max: 5, Expiration: time.Minute})
+	global := limiter.New(limiter.Config{
+		Max:          30,
+		Expiration:   time.Minute,
+		KeyGenerator: func(*fiber.Ctx) string { return "login" },
+	})
+	c.App.Post("/api/auth/login", c.SameOriginWrites, perIP, global, c.AuthController.Login)
+	c.App.Post("/api/auth/logout", c.SameOriginWrites, c.AuthController.Logout)
 }
 
 func (c *RouteConfig) SetupAuthRoute() {
-	api := c.App.Group("/api", c.AuthMiddleware)
+	api := c.App.Group("/api", c.SameOriginWrites, c.AuthMiddleware)
 	api.Get("/auth/me", c.AuthController.Current)
 	api.Get("/system", c.DockerController.System)
 

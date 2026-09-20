@@ -35,6 +35,7 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 }
 
 func (c *AuthController) Logout(ctx *fiber.Ctx) error {
+	c.UseCase.Revoke(ctx.Cookies(middleware.SessionCookie))
 	c.setCookie(ctx, "", time.Unix(0, 0))
 	return ctx.JSON(model.WebResponse[bool]{Data: true})
 }

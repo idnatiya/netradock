@@ -38,9 +38,13 @@ func (u *ContainerUseCase) List(ctx context.Context, all bool) ([]model.Containe
 	return res, nil
 }
 
+// Inspect returns the raw daemon payload with the container environment masked.
 func (u *ContainerUseCase) Inspect(ctx context.Context, id string) (json.RawMessage, error) {
 	_, raw, err := u.Repository.InspectContainer(ctx, id)
-	return raw, err
+	if err != nil {
+		return nil, err
+	}
+	return converter.RedactInspect(raw)
 }
 
 func (u *ContainerUseCase) Action(ctx context.Context, id, action string) error {

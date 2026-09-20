@@ -1,6 +1,7 @@
 package converter
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/idnatiya/netradock/internal/model"
@@ -91,3 +92,41 @@ func StatsToResponse(s container.StatsResponse) model.StatsResponse {
 	}
 	return res
 }
+
+// RedactInspect masks the values of Config.Env in a raw container inspect payload.
+// A session already has full Docker access, but the inspect endpoint would otherwise
+// hand every other container's secrets (database passwords, API keys) straight to the
+// browser, where one XSS or one shared screen leaks them all. The variable names are
+// kept because they are what makes the view useful for debugging.
+func RedactInspect(raw json.RawMessage) (json.RawMessage, error) {
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return nil, err
+	}
+	var config map[string]json.RawMessage
+	if err := json.Unmarshal(doc["Config"], &config); err != nil {
+		return raw, nil // no Config object to redact
+	}
+	var env []string
+	if err := json.Unmarshal(config["Env"], &env); err != nil {
+		return raw, nil // no Env array to redact
+	}
+	for i, kv := range env {
+		if key, _, ok := strings.Cut(kv, "="); ok {
+			env[i] = key + "=" + redacted
+		} else {
+			env[i] = redacted
+		}
+	}
+	masked, err := json.Marshal(env)
+	if err != nil {
+		return nil, err
+	}
+	config["Env"] = masked
+	if doc["Config"], err = json.Marshal(config); err != nil {
+		return nil, err
+	}
+	return json.Marshal(doc)
+}
+
+const redacted = "***redacted***"

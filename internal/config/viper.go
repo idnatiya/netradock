@@ -13,7 +13,7 @@ func NewViper() *viper.Viper {
 	v.AutomaticEnv()
 	v.SetDefault("port", 8080)
 	v.SetDefault("session.hours", 12)
-	v.SetDefault("secure_cookie", false)
+	v.SetDefault("secure_cookie", true)
 	v.SetDefault("log.level", "info")
 	return v
 }

@@ -366,7 +366,8 @@ async function copyInspect() {
                 <div v-if="execOn" class="rounded-lg border border-border overflow-hidden bg-[#181d26]">
                   <XTerm
                     :key="`${id}-${shell}`"
-                    :path="`/containers/${id}/exec?cmd=${encodeURIComponent(shell)}`"
+                    :path="`/containers/${id}/exec`"
+                    :cmd="[shell]"
                     interactive
                     label="Container interactive terminal"
                     @closed="(r) => { execOn = false; execEnded = r || 'Terminal session disconnected.' }"

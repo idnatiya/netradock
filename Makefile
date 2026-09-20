@@ -4,11 +4,16 @@ export
 
 NETRADOCK_USERNAME ?= admin
 NETRADOCK_PASSWORD ?= admin
-NETRADOCK_SECRET ?= dev-only-secret
+# A fresh key per `make dev`: a committed secret lets anyone forge a session token.
+ifeq ($(origin NETRADOCK_SECRET), undefined)
+NETRADOCK_SECRET := $(shell openssl rand -hex 32)
+endif
+# The dev server speaks plain HTTP, so the browser would drop a Secure cookie.
+NETRADOCK_SECURE_COOKIE ?= false
 NETRADOCK_PORT ?= 18080
 WEB_PORT ?= 5178
 
-.PHONY: dev dev-api dev-web install build test
+.PHONY: dev dev-api dev-web install build test audit
 
 ## dev: run the Go API and the Vite dev server together (Ctrl+C stops both)
 dev: web/node_modules web/dist/index.html
@@ -43,3 +48,8 @@ build: web/node_modules
 
 test:
 	go test ./...
+
+## audit: check Go and npm dependencies for known vulnerabilities (needs network)
+audit: web/node_modules
+	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+	cd web && npm audit

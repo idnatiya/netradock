@@ -18,6 +18,19 @@ func NewAuth(auth *usecase.AuthUseCase) fiber.Handler {
 	}
 }
 
+// NewSameOriginWrites applies the origin check to state-changing requests only.
+// Browsers omit Origin on same-origin GETs, so requiring it everywhere would break reads.
+func NewSameOriginWrites() fiber.Handler {
+	check := NewSameOrigin()
+	return func(ctx *fiber.Ctx) error {
+		switch ctx.Method() {
+		case fiber.MethodGet, fiber.MethodHead, fiber.MethodOptions:
+			return ctx.Next()
+		}
+		return check(ctx)
+	}
+}
+
 // NewSameOrigin rejects cross-origin WebSocket upgrades; browsers attach cookies to them regardless of CORS.
 func NewSameOrigin() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {

@@ -12,7 +12,7 @@ func main() {
 	log := config.NewLogger(viperConfig)
 	docker := config.NewDocker(log)
 	defer docker.Close()
-	app := config.NewFiber(viperConfig)
+	app := config.NewFiber(viperConfig, log)
 
 	config.Bootstrap(&config.BootstrapConfig{
 		App:      app,
