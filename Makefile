@@ -55,7 +55,21 @@ test:
 hash:
 	@printf 'Password: ' >&2; \
 	stty -echo 2>/dev/null; read -r pass; stty echo 2>/dev/null; printf '\n' >&2; \
-	printf '%s' "$$pass" | go run ./cmd/hash | sed 's/^/NETRADOCK_PASSWORD_HASH=/'
+	if [ -z "$$pass" ]; then echo "Error: password cannot be empty" >&2; exit 1; fi; \
+	if command -v htpasswd >/dev/null 2>&1; then \
+		hash=$$(printf '%s' "$$pass" | htpasswd -niB -C 12 _ 2>/dev/null | cut -d: -f2-); \
+	elif command -v docker >/dev/null 2>&1; then \
+		hash=$$(docker run --rm caddy:2-alpine caddy hash-password --plaintext "$$pass" 2>/dev/null); \
+	elif command -v go >/dev/null 2>&1; then \
+		hash=$$(printf '%s' "$$pass" | go run ./cmd/hash 2>/dev/null); \
+	else \
+		echo "Error: please install 'htpasswd' (apache2-utils), 'docker', or 'go' to generate hash." >&2; exit 1; \
+	fi; \
+	if [ -n "$$hash" ]; then \
+		printf 'NETRADOCK_PASSWORD_HASH=%s\n' "$$hash"; \
+	else \
+		echo "Error: failed to generate password hash" >&2; exit 1; \
+	fi
 
 ## audit: check Go and npm dependencies for known vulnerabilities (needs network)
 audit: web/node_modules
