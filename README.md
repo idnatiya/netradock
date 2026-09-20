@@ -5,6 +5,7 @@
 </p>
 
 <p align="center">
+  <a href="https://idnatiya.github.io/netradock/"><img src="https://img.shields.io/badge/Website-Landing%20Page-success?style=flat-square&logo=githubpages&logoColor=white" alt="Landing Page"></a>
   <a href="#features"><img src="https://img.shields.io/badge/Docker-Control%20Plane-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker"></a>
   <a href="#development"><img src="https://img.shields.io/badge/Go-1.26+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go Version"></a>
   <a href="#development"><img src="https://img.shields.io/badge/Vue-3.5+-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white" alt="Vue Version"></a>
@@ -258,6 +259,7 @@ make dev
 | `make hash` | Securely prompts for a password and outputs the bcrypt `NETRADOCK_PASSWORD_HASH`. |
 | `make audit` | Runs `govulncheck` on Go code and `npm audit` on frontend dependencies. |
 | `make install` | Downloads Go modules and installs frontend npm packages. |
+| `make docs` | Previews the `docs/` landing page locally at `http://localhost:8000`. |
 
 ---
 

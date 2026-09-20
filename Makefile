@@ -13,8 +13,9 @@ endif
 NETRADOCK_SECURE_COOKIE ?= false
 NETRADOCK_PORT ?= 18080
 WEB_PORT ?= 5178
+DOCS_PORT ?= 8000
 
-.PHONY: dev dev-api dev-web install build test audit hash
+.PHONY: dev dev-api dev-web install build test audit hash docs view-docs
 
 ## dev: run the Go API and the Vite dev server together (Ctrl+C stops both)
 dev: web/node_modules web/dist/index.html
@@ -60,3 +61,17 @@ hash:
 audit: web/node_modules
 	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 	cd web && npm audit
+
+## docs: preview landing page locally at http://localhost:$(DOCS_PORT)
+docs:
+	@echo "Docs: http://localhost:$(DOCS_PORT)"
+	@(sleep 1 && (open "http://localhost:$(DOCS_PORT)" 2>/dev/null || xdg-open "http://localhost:$(DOCS_PORT)" 2>/dev/null || true)) & \
+	if command -v python3 >/dev/null 2>&1; then \
+		python3 -m http.server $(DOCS_PORT) -d docs; \
+	elif command -v npx >/dev/null 2>&1; then \
+		npx --yes serve -p $(DOCS_PORT) docs; \
+	else \
+		open docs/index.html 2>/dev/null || xdg-open docs/index.html 2>/dev/null; \
+	fi
+
+view-docs: docs

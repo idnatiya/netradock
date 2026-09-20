@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Netradock — Lightweight Docker Control Plane for VPS</title>
+  <meta name="description" content="Ultra-lightweight, zero-dependency Docker control plane with real-time telemetry, web terminal, and live log streaming. Single binary, ~25MB RAM.">
+
+  <!-- Open Graph / Meta -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://idnatiya.github.io/netradock/">
+  <meta property="og:title" content="Netradock — Modern Docker Control Plane">
+  <meta property="og:description" content="Ultra-lightweight, single-binary Docker web UI and real-time telemetry for your VPS.">
+
+  <!-- Fonts: Geist Sans & Geist Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['Geist Mono', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            canvas: '#0d0f14',
+            surface: '#131720',
+            card: '#191f2c',
+            border: '#252d3d',
+            subtle: '#323b4e',
+            primary: {
+              DEFAULT: '#3b82f6',
+              hover: '#2563eb',
+              glow: 'rgba(59, 130, 246, 0.15)',
+            },
+            accent: '#06b6d4',
+            success: '#10b981',
+            warning: '#f59e0b',
+            destructive: '#ef4444',
+          },
+          animation: {
+            'pulse-dot': 'pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'subtle-float': 'float 6s ease-in-out infinite',
+          },
+          keyframes: {
+            pulseDot: {
+              '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+              '50%': { opacity: '0.4', transform: 'scale(0.85)' },
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-6px)' },
+            },
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #0d0f14;
+      color: #e2e8f0;
+      font-family: 'Geist', sans-serif;
+      overflow-x: hidden;
+    }
+    .grid-bg {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    }
+    .glass {
+      background: rgba(19, 23, 32, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .glass-card {
+      background: rgba(25, 31, 44, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .code-glow {
+      box-shadow: 0 0 40px -10px rgba(59, 130, 246, 0.18);
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #252d3d;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3b82f6;
+    }
+  </style>
+</head>
+<body class="selection:bg-primary selection:text-white relative">
+
+  <!-- Ambient background glow -->
+  <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[450px] bg-primary/10 rounded-full blur-3xl opacity-70"></div>
+    <div class="absolute top-[600px] -left-40 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl"></div>
+    <div class="absolute top-[1200px] -right-40 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-3xl"></div>
+  </div>
+
+  <!-- STICKY NAVBAR -->
+  <header class="sticky top-0 z-50 glass border-b border-border/60 transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Logo -->
+      <a href="#" class="flex items-center gap-2.5 group">
+        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
+          <svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+            <path d="m3.3 7 8.7 5 8.7-5"/>
+            <path d="M12 22V12"/>
+          </svg>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-base font-bold tracking-tight text-white leading-none">Netradock</span>
+          <span class="text-[9px] font-mono text-slate-400 tracking-wider">CONTAINERS</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center gap-7 text-sm font-medium text-slate-300">
+        <a href="#features" class="hover:text-white transition-colors">Features</a>
+        <a href="#comparison" class="hover:text-white transition-colors">Benchmarks</a>
+        <a href="#quickstart" class="hover:text-white transition-colors">Quick Start</a>
+        <a href="#reverse-proxy" class="hover:text-white transition-colors">Reverse Proxy</a>
+        <a href="#security" class="hover:text-white transition-colors">Security</a>
+      </nav>
+
+      <!-- Right CTA buttons -->
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/idnatiya/netradock" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-border bg-card/80 hover:bg-card hover:border-slate-600 text-xs font-semibold text-white transition-all shadow-xs">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          <span>Star on GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN HERO -->
+  <section class="relative pt-20 pb-16 lg:pt-28 lg:pb-24 grid-bg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+      
+      <!-- Top Announcement Pill -->
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-mono mb-8 hover:bg-primary/15 transition-colors">
+        <span class="w-2 h-2 rounded-full bg-primary animate-pulse-dot"></span>
+        <span>v1.0 Open Source Control Plane</span>
+        <svg class="w-3.5 h-3.5 ml-0.5 text-primary/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.15]">
+        Streamlined Docker Management <br class="hidden sm:block">
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-400">
+          for your VPS.
+        </span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
+        Ultra-lightweight, zero-dependency Docker control plane with real-time telemetry, web-based interactive terminal shell, and live log streaming. Single Go binary, ~25MB RAM.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+        <a href="#quickstart" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-semibold text-sm shadow-lg shadow-primary/25 hover:shadow-primary/35 transition-all">
+          <span>Get Started in 60s</span>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+        <a href="https://github.com/idnatiya/netradock" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-border bg-surface/80 hover:bg-card text-slate-200 font-semibold text-sm transition-all hover:border-slate-500">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          <span>Explore Source</span>
+        </a>
+      </div>
+
+      <!-- Value Proposition Badges -->
+      <div class="mt-12 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 font-mono">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+          <span>~25MB RAM Footprint</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+          <span>Zero External Database</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+          <span>Single Static Binary</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+          <span>Stateless Token Security</span>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE DASHBOARD MOCKUP -->
+      <div class="mt-14 max-w-5xl mx-auto text-left">
+        <div class="rounded-2xl border border-border bg-surface/90 shadow-2xl overflow-hidden code-glow">
+          
+          <!-- Mockup Window Bar -->
+          <div class="px-4 py-3 bg-canvas/90 border-b border-border flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-rose-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+              <span class="text-xs font-mono text-slate-400 ml-2">Netradock Management Console</span>
+            </div>
+            <div class="flex items-center gap-2 font-mono text-[11px] text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot"></span>
+              <span>/var/run/docker.sock connected</span>
+            </div>
+          </div>
+
+          <!-- Mockup App Header -->
+          <div class="p-6 bg-surface border-b border-border/50">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-lg font-bold text-white tracking-tight">Docker Node Telemetry</h2>
+                <p class="text-xs text-slate-400 mt-0.5 font-mono">Linux 6.6.137-vps #1 SMP | Docker 27.5.1</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="px-3 py-1.5 rounded-lg border border-border bg-card text-xs font-mono">
+                  <span class="text-slate-400">Containers:</span> <span class="text-emerald-400 font-semibold">4 active</span> <span class="text-slate-500">/ 5 total</span>
+                </div>
+                <div class="px-3 py-1.5 rounded-lg border border-border bg-card text-xs font-mono">
+                  <span class="text-slate-400">Memory:</span> <span class="text-sky-400 font-semibold">412 MB</span> <span class="text-slate-500">/ 4096 MB</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mockup Main Content Area -->
+          <div class="p-6 space-y-6">
+            
+            <!-- Mini Container Table -->
+            <div class="rounded-xl border border-border bg-card/60 overflow-hidden font-mono text-xs">
+              <div class="grid grid-cols-12 px-4 py-2.5 bg-card text-slate-400 border-b border-border font-medium text-[11px]">
+                <div class="col-span-5 sm:col-span-4">CONTAINER</div>
+                <div class="col-span-3 sm:col-span-3">IMAGE</div>
+                <div class="col-span-4 sm:col-span-3">STATUS</div>
+                <div class="hidden sm:block sm:col-span-2 text-right">TELEMETRY</div>
+              </div>
+
+              <!-- Row 1 -->
+              <div class="grid grid-cols-12 px-4 py-3 border-b border-border/40 items-center hover:bg-card/90 transition-colors">
+                <div class="col-span-5 sm:col-span-4 flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-dot shrink-0"></span>
+                  <span class="font-semibold text-white truncate">netradock-control</span>
+                </div>
+                <div class="col-span-3 sm:col-span-3 text-slate-400 truncate">netradock:latest</div>
+                <div class="col-span-4 sm:col-span-3 text-emerald-400 flex items-center gap-1.5">
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px]">Up 18 days</span>
+                </div>
+                <div class="hidden sm:block sm:col-span-2 text-right text-slate-400">
+                  <span class="text-sky-400">0.2%</span> CPU · <span class="text-indigo-400">22MB</span>
+                </div>
+              </div>
+
+              <!-- Row 2 -->
+              <div class="grid grid-cols-12 px-4 py-3 border-b border-border/40 items-center hover:bg-card/90 transition-colors">
+                <div class="col-span-5 sm:col-span-4 flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-dot shrink-0"></span>
+                  <span class="font-semibold text-white truncate">postgres-production</span>
+                </div>
+                <div class="col-span-3 sm:col-span-3 text-slate-400 truncate">postgres:16-alpine</div>
+                <div class="col-span-4 sm:col-span-3 text-emerald-400 flex items-center gap-1.5">
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px]">Up 18 days</span>
+                </div>
+                <div class="hidden sm:block sm:col-span-2 text-right text-slate-400">
+                  <span class="text-sky-400">0.8%</span> CPU · <span class="text-indigo-400">84MB</span>
+                </div>
+              </div>
+
+              <!-- Row 3 -->
+              <div class="grid grid-cols-12 px-4 py-3 items-center hover:bg-card/90 transition-colors">
+                <div class="col-span-5 sm:col-span-4 flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-dot shrink-0"></span>
+                  <span class="font-semibold text-white truncate">caddy-gateway</span>
+                </div>
+                <div class="col-span-3 sm:col-span-3 text-slate-400 truncate">caddy:2.9-alpine</div>
+                <div class="col-span-4 sm:col-span-3 text-emerald-400 flex items-center gap-1.5">
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px]">Up 18 days</span>
+                </div>
+                <div class="hidden sm:block sm:col-span-2 text-right text-slate-400">
+                  <span class="text-sky-400">0.1%</span> CPU · <span class="text-indigo-400">18MB</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Interactive Shell & Logs Demo Box -->
+            <div class="rounded-xl border border-border bg-canvas p-4 font-mono text-xs">
+              <div class="flex items-center justify-between border-b border-border pb-2.5 mb-3">
+                <div class="flex items-center gap-3">
+                  <button id="tab-btn-logs" onclick="switchMockTab('logs')" class="text-primary font-semibold text-xs flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
+                    <span>Streaming Logs</span>
+                  </button>
+                  <span class="text-slate-600">|</span>
+                  <button id="tab-btn-term" onclick="switchMockTab('term')" class="text-slate-400 hover:text-white text-xs flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                    <span>Interactive XTerm Shell</span>
+                  </button>
+                </div>
+                <span class="text-[10px] text-slate-500">Live WebSocket Connection</span>
+              </div>
+
+              <!-- Content: Logs view -->
+              <div id="mock-view-logs" class="space-y-1 text-[11px] leading-relaxed">
+                <p class="text-slate-400"><span class="text-emerald-400">2026-09-20 20:14:02.105</span> [INFO] daemon: container netradock-control socket attached</p>
+                <p class="text-slate-400"><span class="text-emerald-400">2026-09-20 20:14:03.489</span> [INFO] ws: telemetry stream active (stats buffer synced 1000ms)</p>
+                <p class="text-slate-300"><span class="text-emerald-400">2026-09-20 20:14:04.012</span> [INFO] http: 200 GET /api/containers [ip=127.0.0.1, latency=1.8ms]</p>
+                <p class="text-slate-400"><span class="text-emerald-400">2026-09-20 20:14:05.992</span> [INFO] auth: session token verified (HMAC-SHA256)</p>
+              </div>
+
+              <!-- Content: Terminal view (hidden initially) -->
+              <div id="mock-view-term" class="hidden space-y-1 text-[11px] leading-relaxed text-slate-300">
+                <p class="text-slate-400">Connecting to container shell /bin/sh via WebSocket...</p>
+                <p><span class="text-emerald-400">root@caddy-gateway:/#</span> caddy version</p>
+                <p class="text-slate-400">v2.9.1 h1:sB1i...</p>
+                <p><span class="text-emerald-400">root@caddy-gateway:/#</span> uname -a</p>
+                <p class="text-slate-400">Linux caddy-gateway 6.6.137 #1 SMP PREEMPT_DYNAMIC x86_64 Linux</p>
+                <p><span class="text-emerald-400">root@caddy-gateway:/#</span> <span class="animate-pulse">_</span></p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BENCHMARK COMPARISON SECTION -->
+  <section id="comparison" class="py-20 border-t border-border/70 bg-surface/50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-xs font-mono text-slate-300 mb-4">
+        <span>Resource Footprint Comparison</span>
+      </div>
+      <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+        Designed for Low-Spec VPS & Production Servers
+      </h2>
+      <p class="mt-4 text-sm sm:text-base text-slate-400 max-w-2xl mx-auto">
+        Don't sacrifice half of your 1GB RAM VPS just to run a Docker management dashboard. Netradock gives you complete control with a tiny memory footprint.
+      </p>
+
+      <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+        <!-- Card 1: Netradock -->
+        <div class="rounded-2xl border-2 border-primary/40 bg-card p-6 shadow-xl relative overflow-hidden">
+          <div class="absolute top-0 right-0 px-3 py-1 bg-primary text-white font-mono text-[10px] font-bold rounded-bl-lg">
+            OPTIMAL CHOICE
+          </div>
+          <h3 class="text-xl font-bold text-white flex items-center gap-2">
+            Netradock
+          </h3>
+          <p class="text-xs text-slate-400 mt-1">Lightweight Go + Vue Single Binary</p>
+          <div class="my-6 border-t border-border pt-6 space-y-4">
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">RAM CONSUMPTION</span>
+              <span class="text-3xl font-extrabold text-emerald-400 font-mono">~25 MB</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">RUNTIME STACK</span>
+              <span class="text-sm font-semibold text-white">Single static binary</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">EXTERNAL DATABASE</span>
+              <span class="text-sm font-semibold text-emerald-400">Zero (Pure Stateless)</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">STARTUP TIME</span>
+              <span class="text-sm font-semibold text-white">&lt; 15 milliseconds</span>
+            </div>
+          </div>
+          <div class="px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary font-mono text-center">
+            Ideal for $3–$5/mo VPS nodes
+          </div>
+        </div>
+
+        <!-- Card 2: Portainer -->
+        <div class="rounded-2xl border border-border bg-surface p-6">
+          <h3 class="text-xl font-bold text-slate-200">Portainer CE</h3>
+          <p class="text-xs text-slate-500 mt-1">Full-suite container platform</p>
+          <div class="my-6 border-t border-border pt-6 space-y-4">
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">RAM CONSUMPTION</span>
+              <span class="text-3xl font-extrabold text-slate-300 font-mono">~150–250 MB</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">RUNTIME STACK</span>
+              <span class="text-sm text-slate-300">Dedicated container + agent</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">EXTERNAL DATABASE</span>
+              <span class="text-sm text-slate-300">BoltDB / persistent volume</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">STARTUP TIME</span>
+              <span class="text-sm text-slate-300">3–6 seconds</span>
+            </div>
+          </div>
+          <div class="px-3 py-2 rounded-lg bg-card border border-border text-xs text-slate-400 font-mono text-center">
+            Heavy overhead on small servers
+          </div>
+        </div>
+
+        <!-- Card 3: Yacht -->
+        <div class="rounded-2xl border border-border bg-surface p-6">
+          <h3 class="text-xl font-bold text-slate-200">Yacht</h3>
+          <p class="text-xs text-slate-500 mt-1">Template-focused Docker manager</p>
+          <div class="my-6 border-t border-border pt-6 space-y-4">
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">RAM CONSUMPTION</span>
+              <span class="text-3xl font-extrabold text-slate-300 font-mono">~90–140 MB</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">RUNTIME STACK</span>
+              <span class="text-sm text-slate-300">Python / Node web services</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">EXTERNAL DATABASE</span>
+              <span class="text-sm text-slate-300">SQLite file state</span>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block font-mono">STARTUP TIME</span>
+              <span class="text-sm text-slate-300">2–4 seconds</span>
+            </div>
+          </div>
+          <div class="px-3 py-2 rounded-lg bg-card border border-border text-xs text-slate-400 font-mono text-center">
+            Requires persistent volume state
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES BENTO GRID -->
+  <section id="features" class="py-20 border-t border-border/70">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-xs font-mono text-slate-300 mb-4">
+          <span>Engineered with Purpose</span>
+        </div>
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          Everything You Need. Nothing You Don't.
+        </h2>
+        <p class="mt-4 text-sm sm:text-base text-slate-400">
+          Netradock focuses on the core tasks every developer or sysadmin performs daily, without bloated enterprise wizards or complicated setup layers.
+        </p>
+      </div>
+
+      <!-- Bento Grid -->
+      <div class="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Bento 1: Web Terminal (Span 2) -->
+        <div class="md:col-span-2 rounded-2xl border border-border bg-card p-6 sm:p-8 flex flex-col justify-between hover:border-slate-600 transition-colors">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-4">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-white">Interactive Web Terminal (XTerm.js)</h3>
+            <p class="text-sm text-slate-400 mt-2 leading-relaxed">
+              Attach an interactive shell session (<code class="text-sky-300 font-mono text-xs">sh</code> or <code class="text-sky-300 font-mono text-xs">bash</code>) straight from your web browser. No SSH key distribution or opened host ports required.
+            </p>
+          </div>
+          <div class="mt-6 rounded-xl border border-border bg-canvas p-4 font-mono text-xs text-slate-300">
+            <span class="text-emerald-400">user@container-app:/app$</span> ls -la<br>
+            <span class="text-slate-500">total 16<br>
+            drwxr-xr-x 2 root root 4096 Sep 20 18:30 .<br>
+            -rw-r--r-- 1 root root  220 Sep 20 18:30 config.json</span>
+          </div>
+        </div>
+
+        <!-- Bento 2: WebSocket Live Telemetry -->
+        <div class="rounded-2xl border border-border bg-card p-6 sm:p-8 flex flex-col justify-between hover:border-slate-600 transition-colors">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-4">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-white">Continuous Telemetry</h3>
+            <p class="text-sm text-slate-400 mt-2 leading-relaxed">
+              Real-time CPU and Memory telemetry streamed directly over WebSockets. See resource spikes instantly with zero page reloads.
+            </p>
+          </div>
+          <div class="mt-6 space-y-2 font-mono text-xs">
+            <div class="flex justify-between text-slate-400">
+              <span>CPU UTILIZATION</span>
+              <span class="text-emerald-400">1.2%</span>
+            </div>
+            <div class="w-full bg-canvas rounded-full h-2 overflow-hidden">
+              <div class="bg-emerald-400 h-2 rounded-full w-[15%]"></div>
+            </div>
+            <div class="flex justify-between text-slate-400 pt-1">
+              <span>MEMORY USAGE</span>
+              <span class="text-sky-400">48 MB / 512 MB</span>
+            </div>
+            <div class="w-full bg-canvas rounded-full h-2 overflow-hidden">
+              <div class="bg-sky-400 h-2 rounded-full w-[25%]"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bento 3: Live Logs -->
+        <div class="rounded-2xl border border-border bg-card p-6 sm:p-8 flex flex-col justify-between hover:border-slate-600 transition-colors">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-white">Real-Time Log Streaming</h3>
+            <p class="text-sm text-slate-400 mt-2 leading-relaxed">
+              Streams stdout and stderr live from the Docker daemon. Auto-scrolls to the bottom with built-in pause toggle.
+            </p>
+          </div>
+          <div class="mt-6 font-mono text-[11px] text-slate-400 bg-canvas p-3 rounded-xl border border-border">
+            <span class="text-sky-400">[GET]</span> /healthz 200 OK<br>
+            <span class="text-amber-400">[WARN]</span> buffer re-synced
+          </div>
+        </div>
+
+        <!-- Bento 4: Image Management (Span 2) -->
+        <div class="md:col-span-2 rounded-2xl border border-border bg-card p-6 sm:p-8 flex flex-col justify-between hover:border-slate-600 transition-colors">
+          <div>
+            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-white">Images, Volumes & Networks</h3>
+            <p class="text-sm text-slate-400 mt-2 leading-relaxed">
+              Full lifecycle operations for Docker ecosystem resources. Pull new image tags from public or private registries, inspect persistent volume mounts, and audit Docker network configurations in seconds.
+            </p>
+          </div>
+          <div class="mt-6 flex flex-wrap gap-2 font-mono text-xs">
+            <span class="px-3 py-1.5 rounded-lg border border-border bg-canvas text-slate-300">Pull Image (with tags)</span>
+            <span class="px-3 py-1.5 rounded-lg border border-border bg-canvas text-slate-300">Prune Dangling</span>
+            <span class="px-3 py-1.5 rounded-lg border border-border bg-canvas text-slate-300">Inspect Volumes</span>
+            <span class="px-3 py-1.5 rounded-lg border border-border bg-canvas text-slate-300">Bridge & Host Networks</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- QUICK START SECTION -->
+  <section id="quickstart" class="py-20 border-t border-border/70 bg-surface/40">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-xs font-mono text-slate-300 mb-4">
+          <span>Get Running in 60 Seconds</span>
+        </div>
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          Quick Start & Deployment
+        </h2>
+        <p class="mt-4 text-sm sm:text-base text-slate-400">
+          Pick your preferred deployment method. Docker Compose is strongly recommended for production VPS environments.
+        </p>
+      </div>
+
+      <!-- Quickstart Tabs -->
+      <div class="mt-10">
+        <div class="flex items-center justify-center gap-2 border-b border-border pb-4">
+          <button id="qs-btn-compose" onclick="switchQuickstart('compose')" class="px-4 py-2 rounded-lg bg-primary text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer">
+            Docker Compose
+          </button>
+          <button id="qs-btn-run" onclick="switchQuickstart('run')" class="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-card text-xs font-semibold transition-colors cursor-pointer">
+            Docker CLI (run)
+          </button>
+          <button id="qs-btn-binary" onclick="switchQuickstart('binary')" class="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-card text-xs font-semibold transition-colors cursor-pointer">
+            Standalone Binary
+          </button>
+        </div>
+
+        <!-- Tab 1: Compose -->
+        <div id="qs-view-compose" class="mt-6 rounded-2xl border border-border bg-canvas p-6 relative font-mono text-xs">
+          <button onclick="copyCode('code-compose', this)" class="absolute top-4 right-4 px-3 py-1.5 rounded-lg bg-card border border-border hover:border-slate-500 text-slate-300 text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span>Copy</span>
+          </button>
+          <pre id="code-compose" class="text-slate-300 leading-relaxed overflow-x-auto"><code><span class="text-slate-500"># 1. Clone repository</span>
+git clone https://github.com/idnatiya/netradock.git && cd netradock
+
+<span class="text-slate-500"># 2. Prepare environment variables</span>
+cp .env.example .env
+make hash  <span class="text-slate-500"># Prompts for password, prints NETRADOCK_PASSWORD_HASH</span>
+
+<span class="text-slate-500"># 3. Launch service</span>
+docker compose up -d --build
+
+<span class="text-slate-500"># Access web UI at http://127.0.0.1:8080</span></code></pre>
+        </div>
+
+        <!-- Tab 2: Docker Run -->
+        <div id="qs-view-run" class="hidden mt-6 rounded-2xl border border-border bg-canvas p-6 relative font-mono text-xs">
+          <button onclick="copyCode('code-run', this)" class="absolute top-4 right-4 px-3 py-1.5 rounded-lg bg-card border border-border hover:border-slate-500 text-slate-300 text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span>Copy</span>
+          </button>
+          <pre id="code-run" class="text-slate-300 leading-relaxed overflow-x-auto"><code>docker run -d \
+  --name netradock \
+  --restart unless-stopped \
+  -p 127.0.0.1:8080:8080 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e NETRADOCK_USERNAME=admin \
+  -e NETRADOCK_PASSWORD="your-strong-password" \
+  -e NETRADOCK_SECRET="$(openssl rand -hex 32)" \
+  netradock</code></pre>
+        </div>
+
+        <!-- Tab 3: Binary -->
+        <div id="qs-view-binary" class="hidden mt-6 rounded-2xl border border-border bg-canvas p-6 relative font-mono text-xs">
+          <button onclick="copyCode('code-binary', this)" class="absolute top-4 right-4 px-3 py-1.5 rounded-lg bg-card border border-border hover:border-slate-500 text-slate-300 text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span>Copy</span>
+          </button>
+          <pre id="code-binary" class="text-slate-300 leading-relaxed overflow-x-auto"><code><span class="text-slate-500"># Prerequisites: Go 1.26+, Node.js 22+</span>
+git clone https://github.com/idnatiya/netradock.git && cd netradock
+make install
+make build
+
+<span class="text-slate-500"># Run compiled static binary</span>
+NETRADOCK_USERNAME=admin NETRADOCK_PASSWORD="your-password" ./netradock</code></pre>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- REVERSE PROXY SECTION -->
+  <section id="reverse-proxy" class="py-20 border-t border-border/70">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-xs font-mono text-slate-300 mb-4">
+          <span>Production TLS & Proxy</span>
+        </div>
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          Reverse Proxy Configurations
+        </h2>
+        <p class="mt-4 text-sm sm:text-base text-slate-400">
+          Always run Netradock behind HTTPS. Make sure your proxy forwards WebSocket connections and supplies real client IPs via headers.
+        </p>
+      </div>
+
+      <div class="mt-10">
+        <div class="flex items-center justify-center gap-2 border-b border-border pb-4">
+          <button id="rp-btn-caddy" onclick="switchProxy('caddy')" class="px-4 py-2 rounded-lg bg-primary text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer">
+            Caddy (Recommended)
+          </button>
+          <button id="rp-btn-nginx" onclick="switchProxy('nginx')" class="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-card text-xs font-semibold transition-colors cursor-pointer">
+            Nginx
+          </button>
+        </div>
+
+        <!-- Caddy View -->
+        <div id="rp-view-caddy" class="mt-6 rounded-2xl border border-border bg-canvas p-6 relative font-mono text-xs">
+          <button onclick="copyCode('code-caddy', this)" class="absolute top-4 right-4 px-3 py-1.5 rounded-lg bg-card border border-border hover:border-slate-500 text-slate-300 text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span>Copy</span>
+          </button>
+          <pre id="code-caddy" class="text-slate-300 leading-relaxed overflow-x-auto"><code><span class="text-slate-500"># /etc/caddy/Caddyfile</span>
+docker.yourdomain.com {
+    reverse_proxy 127.0.0.1:8080
+}
+
+<span class="text-slate-500"># In .env:</span>
+NETRADOCK_PROXY_HEADER=X-Forwarded-For
+NETRADOCK_SECURE_COOKIE=true</code></pre>
+        </div>
+
+        <!-- Nginx View -->
+        <div id="rp-view-nginx" class="hidden mt-6 rounded-2xl border border-border bg-canvas p-6 relative font-mono text-xs">
+          <button onclick="copyCode('code-nginx', this)" class="absolute top-4 right-4 px-3 py-1.5 rounded-lg bg-card border border-border hover:border-slate-500 text-slate-300 text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span>Copy</span>
+          </button>
+          <pre id="code-nginx" class="text-slate-300 leading-relaxed overflow-x-auto"><code>server {
+    listen 443 ssl http2;
+    server_name docker.yourdomain.com;
+
+    ssl_certificate     /etc/letsencrypt/live/docker.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/docker.yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+
+        # WebSocket support
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        # Forwarded headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_buffering off;
+        proxy_read_timeout 86400s;
+    }
+}</code></pre>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SECURITY SECTION -->
+  <section id="security" class="py-20 border-t border-border/70 bg-surface/50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-xs font-mono text-slate-300 mb-4">
+          <span>Defense in Depth</span>
+        </div>
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          Hardened Security by Default
+        </h2>
+        <p class="mt-4 text-sm sm:text-base text-slate-400">
+          Because Docker socket access equates to root privileges on your host, Netradock treats security as a foundational requirement.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="p-6 rounded-2xl border border-border bg-card">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3 class="text-base font-bold text-white">Stateless HMAC Tokens</h3>
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            HttpOnly, SameSite=Lax, and Secure cookie tokens. Instant revocation upon password or secret rotation.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl border border-border bg-card">
+          <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center mb-3">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3 class="text-base font-bold text-white">Brute-Force Rate Limiting</h3>
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            Strict 5 requests/min per-IP limiter coupled with a global bucket prevent brute-force credential attacks.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl border border-border bg-card">
+          <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-3">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+          </div>
+          <h3 class="text-base font-bold text-white">CSRF Same-Origin Guard</h3>
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            Mutation routes (POST, DELETE) and WebSocket upgrades reject cross-origin requests automatically.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl border border-border bg-card">
+          <div class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center mb-3">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>
+          </div>
+          <h3 class="text-base font-bold text-white">Distroless Image</h3>
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            Minimal container attack surface using Debian static distroless with zero package managers or shell utilities.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOTTOM CALL TO ACTION -->
+  <section class="py-20 relative overflow-hidden border-t border-border">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+        Ready to take control of your Docker containers?
+      </h2>
+      <p class="mt-4 text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
+        Netradock is free, open source, and takes less than a minute to deploy. Star the repository on GitHub to follow updates.
+      </p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+        <a href="#quickstart" class="px-6 py-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-semibold text-sm shadow-lg shadow-primary/20 transition-all">
+          Deploy Netradock Now
+        </a>
+        <a href="https://github.com/idnatiya/netradock" target="_blank" rel="noopener noreferrer" class="px-6 py-3 rounded-xl border border-border bg-card hover:bg-subtle text-white font-semibold text-sm transition-all flex items-center gap-2">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          <span>Star on GitHub</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-10 border-t border-border bg-canvas text-xs text-slate-500 font-mono">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-5 h-5 rounded bg-primary flex items-center justify-center text-white">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>
+        </div>
+        <span class="text-slate-300 font-semibold">Netradock</span>
+        <span>— Released under <a href="https://github.com/idnatiya/netradock/blob/main/LICENSE" class="underline hover:text-slate-300">MIT License</a>.</span>
+      </div>
+      <div>
+        Made with ❤️ by <a href="https://github.com/idnatiya" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-white underline">Code Ranger</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SCRIPT FOR TABS AND COPY -->
+  <script>
+    // Tab switcher for Mockup preview (logs vs terminal)
+    function switchMockTab(tab) {
+      const logsView = document.getElementById('mock-view-logs');
+      const termView = document.getElementById('mock-view-term');
+      const logsBtn = document.getElementById('tab-btn-logs');
+      const termBtn = document.getElementById('tab-btn-term');
+
+      if (tab === 'logs') {
+        logsView.classList.remove('hidden');
+        termView.classList.add('hidden');
+        logsBtn.className = 'text-primary font-semibold text-xs flex items-center gap-1.5 cursor-pointer';
+        termBtn.className = 'text-slate-400 hover:text-white text-xs flex items-center gap-1.5 cursor-pointer';
+      } else {
+        logsView.classList.add('hidden');
+        termView.classList.remove('hidden');
+        termBtn.className = 'text-primary font-semibold text-xs flex items-center gap-1.5 cursor-pointer';
+        logsBtn.className = 'text-slate-400 hover:text-white text-xs flex items-center gap-1.5 cursor-pointer';
+      }
+    }
+
+    // Tab switcher for Quickstart
+    function switchQuickstart(tab) {
+      const tabs = ['compose', 'run', 'binary'];
+      tabs.forEach(t => {
+        const view = document.getElementById('qs-view-' + t);
+        const btn = document.getElementById('qs-btn-' + t);
+        if (t === tab) {
+          view.classList.remove('hidden');
+          btn.className = 'px-4 py-2 rounded-lg bg-primary text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer';
+        } else {
+          view.classList.add('hidden');
+          btn.className = 'px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-card text-xs font-semibold transition-colors cursor-pointer';
+        }
+      });
+    }
+
+    // Tab switcher for Reverse Proxy
+    function switchProxy(tab) {
+      const tabs = ['caddy', 'nginx'];
+      tabs.forEach(t => {
+        const view = document.getElementById('rp-view-' + t);
+        const btn = document.getElementById('rp-btn-' + t);
+        if (t === tab) {
+          view.classList.remove('hidden');
+          btn.className = 'px-4 py-2 rounded-lg bg-primary text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer';
+        } else {
+          view.classList.add('hidden');
+          btn.className = 'px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-card text-xs font-semibold transition-colors cursor-pointer';
+        }
+      });
+    }
+
+    // Clipboard Copy Helper
+    function copyCode(elementId, button) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const text = el.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const origContent = button.innerHTML;
+        button.innerHTML = '<svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg><span class="text-emerald-400">Copied!</span>';
+        setTimeout(() => {
+          button.innerHTML = origContent;
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
