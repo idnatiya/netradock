@@ -107,15 +107,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="root" class="search position-relative">
-    <div class="input-icon">
-      <span class="input-icon-addon"><IconSearch :size="16" /></span>
+  <div ref="root" class="search-container position-relative">
+    <div class="search-box">
+      <span class="search-icon"><IconSearch :size="15" /></span>
       <input
         ref="input"
         v-model="query"
         type="search"
-        class="form-control form-control-sm"
-        placeholder="Cari container, image, volume, network"
+        class="search-input"
+        placeholder="Cari container, image, volume, network..."
         aria-label="Cari semua sumber daya"
         role="combobox"
         aria-controls="search-results"
@@ -125,10 +125,10 @@ onUnmounted(() => {
         @input="show"
         @keydown="onKey"
       >
-      <span class="input-icon-addon end text-secondary d-none d-xl-flex"><kbd class="kbd">⌘K</kbd></span>
+      <span class="search-shortcut d-none d-sm-flex"><kbd class="kbd">⌘K</kbd></span>
     </div>
 
-    <div v-if="open && query.trim()" id="search-results" class="dropdown-menu show w-100 mt-1 py-1" role="listbox">
+    <div v-if="open && query.trim()" id="search-results" class="dropdown-menu search-dropdown show w-100 py-1" role="listbox">
       <p v-if="!results.length" class="dropdown-header mb-0 text-secondary">Tidak ada yang cocok.</p>
       <button
         v-for="(h, i) in results"
@@ -154,23 +154,76 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* The box sits on Docker Desktop's blue title bar, so it draws its own light-on-blue skin. */
-.search { max-width: 560px; width: 100%; }
-.search input {
-  padding-right: 3.5rem;
-  background: rgb(0 0 0 / 0.22);
-  border-color: rgb(255 255 255 / 0.28);
-  color: #fff;
+.search-container {
+  max-width: 460px;
+  width: 100%;
 }
-.search input::placeholder { color: rgb(255 255 255 / 0.65); }
-.search input:focus {
-  background: rgb(0 0 0 / 0.3);
-  border-color: #fff;
-  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.25);
-  color: #fff;
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
-.search .input-icon-addon { color: rgb(255 255 255 / 0.7); }
-.input-icon-addon.end { left: auto; right: 0; width: auto; padding-right: 0.5rem; pointer-events: none; }
-.kbd { background: rgb(255 255 255 / 0.15); border: 0; color: #fff; }
-.dropdown-menu { position: absolute; top: 100%; left: 0; z-index: 1050; max-height: 60vh; overflow-y: auto; }
+.search-icon {
+  position: absolute;
+  left: 0.625rem;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.7);
+  z-index: 2;
+}
+.search-input {
+  width: 100%;
+  height: 32px;
+  font-size: 13px;
+  padding: 0 2.5rem 0 2rem;
+  border-radius: var(--tblr-border-radius);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  outline: none;
+  transition: all 0.15s ease;
+}
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.65);
+}
+.search-input:hover {
+  background: rgba(0, 0, 0, 0.24);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.search-input:focus {
+  background: rgba(0, 0, 0, 0.28);
+  border-color: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+.search-shortcut {
+  position: absolute;
+  right: 0.45rem;
+  pointer-events: none;
+  z-index: 2;
+}
+.kbd {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+}
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  z-index: 1050;
+  max-height: 60vh;
+  overflow-y: auto;
+  border-radius: 8px;
+  border: 1px solid var(--tblr-border-color);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  background: var(--tblr-bg-surface);
+  color: var(--tblr-body-color);
+}
 </style>

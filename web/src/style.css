@@ -17,8 +17,9 @@
   --nav-width: 232px;
   --statusbar-height: 28px;
   /* The title bar stays blue in both themes, like Docker Desktop. */
-  --topbar-height: 56px;
-  --topbar-bg: linear-gradient(90deg, #1d63ed 0%, #1a4fc4 55%, #0f2f6b 100%);
+  --topbar-height: 48px;
+  --topbar-bg: #1d63ed;
+  --topbar-border: rgba(0, 0, 0, 0.15);
   --topbar-fg: #ffffff;
 }
 :root, [data-bs-theme='light'] {
@@ -113,3 +114,41 @@ body { font-family: var(--tblr-font-sans-serif); }
   .table-stack td[data-label]::before { content: attr(data-label) ': '; color: var(--tblr-secondary); }
   .table-stack td.text-end { text-align: left !important; padding-top: 0.5rem !important; }
 }
+
+/* Card & UI modernizations */
+.card {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--tblr-border-color);
+  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+.card-link {
+  text-decoration: none;
+  color: inherit;
+}
+.card-link:hover {
+  border-color: var(--tblr-primary);
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+[data-bs-theme='dark'] .card-link:hover {
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* Status animation */
+.status-dot-animated {
+  animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* Metric typography */
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+

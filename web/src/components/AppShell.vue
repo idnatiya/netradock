@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { IconBox, IconDatabase, IconLayoutDashboard, IconLogout, IconMenu2, IconMoon, IconNetwork, IconStack2, IconSun } from '@tabler/icons-vue'
+import { IconBox, IconChevronDown, IconDatabase, IconLayoutDashboard, IconLogout, IconMenu2, IconMoon, IconNetwork, IconStack2, IconSun } from '@tabler/icons-vue'
 import { api, currentUser, notice, type System } from '@/api'
 import { theme, toggleTheme } from '@/theme'
 import { useLoad } from '@/useLoad'
@@ -45,34 +45,53 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
 <template>
   <div class="shell">
     <header class="shell-top">
-      <button
-        class="btn btn-icon topbar-btn d-lg-none"
-        type="button"
-        aria-controls="sidebar-menu"
-        :aria-expanded="menuOpen"
-        aria-label="Buka menu"
-        @click="menuOpen = !menuOpen"
-      >
-        <IconMenu2 :size="20" />
-      </button>
-      <RouterLink to="/" class="brand text-reset text-decoration-none"><BrandLogo /></RouterLink>
-
-      <GlobalSearch class="mx-auto" />
-
-      <div class="d-flex align-items-center gap-2">
-        <button type="button" class="btn btn-icon topbar-btn" :aria-label="theme === 'dark' ? 'Pakai tema terang' : 'Pakai tema gelap'" :title="theme === 'dark' ? 'Tema terang' : 'Tema gelap'" @click="toggleTheme">
-          <IconSun v-if="theme === 'dark'" :size="20" />
-          <IconMoon v-else :size="20" />
+      <div class="shell-top-left">
+        <button
+          class="btn btn-icon topbar-btn d-lg-none me-2"
+          type="button"
+          aria-controls="sidebar-menu"
+          :aria-expanded="menuOpen"
+          aria-label="Buka menu"
+          @click="menuOpen = !menuOpen"
+        >
+          <IconMenu2 :size="18" />
         </button>
-        <Dropdown label="Menu akun" end class="account d-flex lh-1 p-0 border-0 bg-transparent">
+        <RouterLink to="/" class="brand text-reset text-decoration-none">
+          <BrandLogo />
+        </RouterLink>
+      </div>
+
+      <div class="shell-top-center">
+        <GlobalSearch />
+      </div>
+
+      <div class="shell-top-right">
+        <div v-if="sys.data.value" class="engine-status d-none d-md-flex" title="Docker Engine Running">
+          <span class="status-dot"></span>
+          <span class="status-text">Engine running</span>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-icon topbar-btn"
+          :aria-label="theme === 'dark' ? 'Pakai tema terang' : 'Pakai tema gelap'"
+          :title="theme === 'dark' ? 'Tema terang' : 'Tema gelap'"
+          @click="toggleTheme"
+        >
+          <IconSun v-if="theme === 'dark'" :size="18" />
+          <IconMoon v-else :size="18" />
+        </button>
+
+        <Dropdown label="Menu akun" end class="account-dropdown-btn">
           <template #toggle>
-            <span class="avatar avatar-sm">{{ initials() }}</span>
-            <span class="ps-2 text-start d-none d-md-block">
-              <span class="d-block">{{ currentUser }}</span>
-              <span class="d-block mt-1 small opacity-75">Administrator</span>
-            </span>
+            <span class="avatar avatar-xs">{{ initials() }}</span>
+            <span class="account-name d-none d-sm-inline">{{ currentUser }}</span>
+            <IconChevronDown :size="14" class="account-chevron" />
           </template>
-          <button type="button" class="dropdown-item" role="menuitem" @click="logout"><IconLogout :size="18" class="icon dropdown-item-icon" />Keluar</button>
+          <button type="button" class="dropdown-item" role="menuitem" @click="logout">
+            <IconLogout :size="16" class="icon dropdown-item-icon" />
+            Keluar
+          </button>
         </Dropdown>
       </div>
     </header>
@@ -120,19 +139,135 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
   grid-area: top;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  height: var(--topbar-height);
   padding: 0 0.75rem;
   background: var(--topbar-bg);
+  border-bottom: 1px solid var(--topbar-border);
+  color: var(--topbar-fg);
+  user-select: none;
+  z-index: 1020;
+}
+
+.shell-top-left {
+  display: flex;
+  align-items: center;
+  width: calc(var(--nav-width) - 0.75rem);
+  flex-shrink: 0;
+}
+
+.shell-top-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+  padding: 0 1rem;
+}
+
+.shell-top-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.brand {
+  color: var(--topbar-fg);
+  display: inline-flex;
+  align-items: center;
+}
+
+.engine-status {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-right: 0.25rem;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #20c997;
+  box-shadow: 0 0 6px rgba(32, 201, 151, 0.7);
+}
+
+.status-text {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+
+.topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  color: var(--topbar-fg);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease;
+}
+
+.topbar-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
   color: var(--topbar-fg);
 }
-.brand { color: var(--topbar-fg); }
-.shell-top :deep(.brand-mark) { background: transparent; width: 1.75rem; height: 1.75rem; }
-.shell-top :deep(.brand-mark svg) { width: 26px; height: 26px; }
-.topbar-btn { color: var(--topbar-fg); background: transparent; border-color: transparent; }
-.topbar-btn:hover { background: rgb(255 255 255 / 0.14); color: var(--topbar-fg); }
-.account { color: var(--topbar-fg); }
-.account:hover { color: var(--topbar-fg); }
-.account .avatar { background: rgb(255 255 255 / 0.18); color: var(--topbar-fg); }
+
+:deep(.account-dropdown-btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 32px;
+  padding: 0 0.5rem 0 0.25rem;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--topbar-fg);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+:deep(.account-dropdown-btn:hover) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+:deep(.account-dropdown-btn .avatar-xs) {
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.account-name) {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:deep(.account-chevron) {
+  color: rgba(255, 255, 255, 0.75);
+}
 
 .shell-nav {
   grid-area: nav;
@@ -165,7 +300,9 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
     grid-template-rows: var(--topbar-height) 1fr var(--statusbar-height);
     grid-template-areas: 'top' 'main' 'status';
   }
-  .shell-top { gap: 0.5rem; }
+  .shell-top { padding: 0 0.5rem; }
+  .shell-top-left { width: auto; }
+  .shell-top-center { padding: 0 0.375rem; }
   .shell-nav {
     position: fixed;
     top: var(--topbar-height);
