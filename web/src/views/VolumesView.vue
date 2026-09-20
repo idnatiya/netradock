@@ -24,13 +24,13 @@ async function remove(v: Volume) {
     <!-- Page Header -->
     <PageHeader title="Volumes">
       <template #meta>
-        <span v-if="data" class="font-mono text-xs text-muted-foreground">
+        <span v-if="data" class="font-mono text-sm text-muted-foreground">
           {{ data.length }} persistent volume{{ data.length === 1 ? '' : 's' }}
         </span>
       </template>
     </PageHeader>
 
-    <div class="p-6 max-w-7xl mx-auto space-y-4">
+    <div class="p-6 w-full space-y-4">
       <div class="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
         <LoadState :loading="loading" :error="error" :empty="sorted.length === 0" what="volumes" @retry="reload">
           <template #empty>
@@ -39,7 +39,7 @@ async function remove(v: Volume) {
                 <HardDrive class="size-6" />
               </div>
               <h3 class="text-base font-semibold text-foreground">No Volumes Found</h3>
-              <p class="text-xs text-muted-foreground max-w-sm mx-auto">
+              <p class="text-sm text-muted-foreground max-w-sm mx-auto">
                 Volumes are automatically created when containers use <code>-v name:/path</code> or via Docker Compose.
               </p>
             </div>
@@ -48,16 +48,16 @@ async function remove(v: Volume) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Volume Name</TableHead>
-                <TableHead>Driver</TableHead>
-                <TableHead>Mountpoint</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead class="text-right w-16">Action</TableHead>
+                <TableHead class="text-sm">Volume Name</TableHead>
+                <TableHead class="text-sm">Driver</TableHead>
+                <TableHead class="text-sm">Mountpoint</TableHead>
+                <TableHead class="text-sm">Created</TableHead>
+                <TableHead class="text-sm text-right w-16">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow v-for="v in sorted" :key="v.name">
-                <TableCell class="font-mono text-xs font-semibold text-foreground break-all">
+                <TableCell class="font-mono text-sm font-semibold text-foreground break-all">
                   {{ v.name }}
                 </TableCell>
                 <TableCell class="text-xs text-muted-foreground font-mono">

@@ -75,7 +75,7 @@ async function remove(i: Image) {
       </template>
     </PageHeader>
 
-    <div class="p-6 max-w-7xl mx-auto space-y-6">
+    <div class="p-6 w-full space-y-6">
       <!-- 4 KPI Summary Cards -->
       <div v-if="data" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -127,7 +127,7 @@ async function remove(i: Image) {
                 <Layers class="size-6" />
               </div>
               <h3 class="text-base font-semibold text-foreground">No Images Found</h3>
-              <p class="text-xs text-muted-foreground max-w-sm mx-auto">
+              <p class="text-sm text-muted-foreground max-w-sm mx-auto">
                 Enter an image name in the box above (e.g. <code>nginx:alpine</code>) and click "Pull image".
               </p>
             </div>
@@ -136,19 +136,19 @@ async function remove(i: Image) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Repository / Tag</TableHead>
-                <TableHead>Image ID</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>In Use</TableHead>
-                <TableHead class="text-right w-16">Action</TableHead>
+                <TableHead class="text-sm">Repository / Tag</TableHead>
+                <TableHead class="text-sm">Image ID</TableHead>
+                <TableHead class="text-sm">Size</TableHead>
+                <TableHead class="text-sm">Created</TableHead>
+                <TableHead class="text-sm">In Use</TableHead>
+                <TableHead class="text-sm text-right w-16">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow v-for="i in sorted" :key="i.id">
                 <TableCell>
                   <div class="space-y-0.5">
-                    <span v-for="t in i.tags" :key="t" class="font-mono text-xs font-medium text-foreground block">
+                    <span v-for="t in i.tags" :key="t" class="font-mono text-sm font-semibold text-foreground block">
                       {{ t }}
                     </span>
                     <span v-if="i.tags.length === 0" class="text-xs text-muted-foreground italic font-mono">
@@ -166,7 +166,7 @@ async function remove(i: Image) {
                   {{ ago(i.created) }}
                 </TableCell>
                 <TableCell>
-                  <Badge v-if="i.containers > 0" variant="success" class="text-[11px] font-mono">
+                  <Badge v-if="i.containers > 0" variant="success" class="text-xs font-mono py-0.5 px-2">
                     {{ i.containers }} container{{ i.containers === 1 ? '' : 's' }}
                   </Badge>
                   <span v-else class="text-xs text-muted-foreground font-mono">unused</span>

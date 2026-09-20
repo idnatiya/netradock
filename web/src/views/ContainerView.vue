@@ -166,7 +166,7 @@ async function copyInspect() {
       </template>
     </PageHeader>
 
-    <div class="p-6 max-w-7xl mx-auto space-y-6">
+    <div class="p-6 w-full space-y-6">
       <div v-if="loading || !data">
         <LoadState :loading="loading" :error="error" :empty="!data" what="container" @retry="reload">
           <template #empty>
@@ -219,7 +219,7 @@ async function copyInspect() {
               <div class="text-xl font-bold font-mono text-foreground">
                 {{ startedAt ? ago(startedAt) : 'Inactive' }}
               </div>
-              <p class="text-[11px] text-muted-foreground font-mono mt-0.5">
+              <p class="text-xs text-muted-foreground font-mono mt-0.5">
                 created {{ ago(Date.parse(data.Created) / 1000) }}
               </p>
             </CardContent>
@@ -233,7 +233,7 @@ async function copyInspect() {
               <div class="text-xl font-bold font-mono text-foreground">
                 {{ data.RestartCount }}x
               </div>
-              <p class="text-[11px] text-muted-foreground font-mono mt-0.5">
+              <p class="text-xs text-muted-foreground font-mono mt-0.5">
                 last exit code {{ data.State.ExitCode }}
               </p>
             </CardContent>
@@ -244,21 +244,21 @@ async function copyInspect() {
         <Card class="overflow-hidden">
           <Tabs v-model="activeTab" class="w-full">
             <div class="border-b border-border px-5 pt-3 bg-muted/20">
-              <TabsList class="h-9 bg-muted/60">
-                <TabsTrigger value="logs" class="gap-1.5 text-xs">
-                  <FileText class="size-3.5" />
+              <TabsList class="h-9.5 bg-muted/60">
+                <TabsTrigger value="logs" class="gap-1.5 text-sm">
+                  <FileText class="size-4" />
                   <span>Logs</span>
                 </TabsTrigger>
-                <TabsTrigger value="stats" class="gap-1.5 text-xs">
-                  <Activity class="size-3.5" />
+                <TabsTrigger value="stats" class="gap-1.5 text-sm">
+                  <Activity class="size-4" />
                   <span>Stats</span>
                 </TabsTrigger>
-                <TabsTrigger value="terminal" class="gap-1.5 text-xs">
-                  <Terminal class="size-3.5" />
+                <TabsTrigger value="terminal" class="gap-1.5 text-sm">
+                  <Terminal class="size-4" />
                   <span>Terminal</span>
                 </TabsTrigger>
-                <TabsTrigger value="inspect" class="gap-1.5 text-xs">
-                  <Code2 class="size-3.5" />
+                <TabsTrigger value="inspect" class="gap-1.5 text-sm">
+                  <Code2 class="size-4" />
                   <span>Inspect</span>
                 </TabsTrigger>
               </TabsList>

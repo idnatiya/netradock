@@ -163,7 +163,7 @@ async function bulk(action: keyof typeof bulkLabels) {
       </template>
     </PageHeader>
 
-    <div class="p-6 max-w-7xl mx-auto space-y-4">
+    <div class="p-6 w-full space-y-4">
       <!-- Toolbar -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <!-- Batch selection bar -->
@@ -172,51 +172,51 @@ async function bulk(action: keyof typeof bulkLabels) {
             {{ selected.size }} selected
           </Badge>
           <div class="flex items-center gap-1.5">
-            <Button size="sm" variant="outline" class="h-8 text-xs gap-1" :disabled="bulkBusy" @click="bulk('start')">
-              <Play class="size-3 fill-current" />
+            <Button size="sm" variant="outline" class="h-8.5 text-xs gap-1" :disabled="bulkBusy" @click="bulk('start')">
+              <Play class="size-3.5 fill-current" />
               <span>Start</span>
             </Button>
-            <Button size="sm" variant="outline" class="h-8 text-xs gap-1" :disabled="bulkBusy" @click="bulk('stop')">
-              <Square class="size-3 fill-current" />
+            <Button size="sm" variant="outline" class="h-8.5 text-xs gap-1" :disabled="bulkBusy" @click="bulk('stop')">
+              <Square class="size-3.5 fill-current" />
               <span>Stop</span>
             </Button>
-            <Button size="sm" variant="outline" class="h-8 text-xs gap-1" :disabled="bulkBusy" @click="bulk('restart')">
-              <RotateCcw class="size-3" />
+            <Button size="sm" variant="outline" class="h-8.5 text-xs gap-1" :disabled="bulkBusy" @click="bulk('restart')">
+              <RotateCcw class="size-3.5" />
               <span>Restart</span>
             </Button>
-            <Button size="sm" variant="destructive" class="h-8 text-xs gap-1" :disabled="bulkBusy" @click="bulk('remove')">
-              <Trash2 class="size-3" />
+            <Button size="sm" variant="destructive" class="h-8.5 text-xs gap-1" :disabled="bulkBusy" @click="bulk('remove')">
+              <Trash2 class="size-3.5" />
               <span>Remove</span>
             </Button>
           </div>
-          <Button size="sm" variant="ghost" class="h-8 text-xs" @click="selected.clear()">
+          <Button size="sm" variant="ghost" class="h-8.5 text-xs" @click="selected.clear()">
             Clear selection
           </Button>
         </div>
 
         <!-- Filter bar -->
         <div v-else class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-          <div class="relative w-full sm:w-72">
-            <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <div class="relative w-full sm:w-80">
+            <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               v-model="query"
               type="search"
               placeholder="Filter by name or image..."
-              class="h-8 pl-8 text-xs"
+              class="h-8.5 pl-8.5 text-sm"
             />
           </div>
 
-          <label class="flex items-center gap-2 text-xs text-muted-foreground select-none cursor-pointer">
+          <label class="flex items-center gap-2 text-sm text-muted-foreground select-none cursor-pointer">
             <input
               v-model="onlyRunning"
               type="checkbox"
-              class="rounded border-input text-primary focus:ring-ring size-3.5"
+              class="rounded border-input text-primary focus:ring-ring size-4"
             />
             <span>Running only</span>
           </label>
         </div>
 
-        <div class="text-xs text-muted-foreground font-mono">
+        <div class="text-sm text-muted-foreground font-mono">
           {{ shown.length }} container{{ shown.length === 1 ? '' : 's' }}
         </div>
       </div>
@@ -231,13 +231,13 @@ async function bulk(action: keyof typeof bulkLabels) {
               </div>
               <template v-if="!data?.length">
                 <h3 class="text-base font-semibold text-foreground">No Containers Found</h3>
-                <p class="text-xs text-muted-foreground max-w-sm mx-auto">
+                <p class="text-sm text-muted-foreground max-w-sm mx-auto">
                   Launch a container via <code>docker run</code> or <code>docker compose up</code> and it will appear here in real-time.
                 </p>
               </template>
               <template v-else>
                 <h3 class="text-base font-semibold text-foreground">No Matching Containers</h3>
-                <p class="text-xs text-muted-foreground">Adjust your search query or disable the "Running only" filter.</p>
+                <p class="text-sm text-muted-foreground">Adjust your search query or disable the "Running only" filter.</p>
                 <Button size="sm" variant="outline" class="mt-2 text-xs" @click="query = ''; onlyRunning = false">
                   Reset filters
                 </Button>
@@ -259,13 +259,13 @@ async function bulk(action: keyof typeof bulkLabels) {
                   />
                 </TableHead>
                 <TableHead class="w-8" />
-                <TableHead>Name</TableHead>
-                <TableHead>Container ID</TableHead>
-                <TableHead>Image</TableHead>
-                <TableHead>Port(s)</TableHead>
-                <TableHead class="text-right">CPU</TableHead>
-                <TableHead class="text-right">Memory</TableHead>
-                <TableHead class="text-right w-28">Actions</TableHead>
+                <TableHead class="text-sm">Name</TableHead>
+                <TableHead class="text-sm">Container ID</TableHead>
+                <TableHead class="text-sm">Image</TableHead>
+                <TableHead class="text-sm">Port(s)</TableHead>
+                <TableHead class="text-sm text-right">CPU</TableHead>
+                <TableHead class="text-sm text-right">Memory</TableHead>
+                <TableHead class="text-sm text-right w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -285,13 +285,13 @@ async function bulk(action: keyof typeof bulkLabels) {
                 <TableCell colspan="4">
                   <button
                     type="button"
-                    class="flex items-center gap-1.5 text-xs font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
+                    class="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
                     @click="toggleGroup(project)"
                   >
-                    <ChevronDown v-if="!collapsed.has(project)" class="size-3.5" />
-                    <ChevronRight v-else class="size-3.5" />
+                    <ChevronDown v-if="!collapsed.has(project)" class="size-4" />
+                    <ChevronRight v-else class="size-4" />
                     <span>{{ project }}</span>
-                    <Badge variant="outline" class="font-mono text-[10px] py-0 px-1 ml-1">
+                    <Badge variant="outline" class="font-mono text-xs py-0 px-1.5 ml-1">
                       {{ items.length }}
                     </Badge>
                   </button>
@@ -326,7 +326,7 @@ async function bulk(action: keyof typeof bulkLabels) {
                 <TableCell>
                   <RouterLink
                     :to="`/containers/${c.id}`"
-                    class="font-medium text-foreground hover:underline text-xs block truncate max-w-[200px]"
+                    class="font-semibold text-foreground hover:underline text-sm block truncate max-w-md"
                     :class="{ 'pl-3': !!project }"
                     :title="c.name"
                   >

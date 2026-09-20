@@ -27,7 +27,7 @@ onMounted(() => {
     cursorBlink: props.interactive,
     scrollback: 5000,
     fontFamily: "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
-    fontSize: 13,
+    fontSize: 14,
     theme: { background: '#181d26', foreground: '#e6e8eb', cursor: '#e6e8eb', selectionBackground: '#41454d' },
   })
   const fit = new FitAddon()

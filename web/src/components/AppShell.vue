@@ -184,7 +184,7 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
         <!-- Navigation items -->
         <div class="flex-1 overflow-y-auto px-3 py-4 space-y-6">
           <div v-for="g in navGroups" :key="g.title || 'main'" class="space-y-1">
-            <h4 v-if="g.title" class="px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <h4 v-if="g.title" class="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {{ g.title }}
             </h4>
             <div class="space-y-0.5 pt-1">
@@ -192,7 +192,7 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
                 v-for="l in g.items"
                 :key="l.to"
                 :to="l.to"
-                class="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors"
+                class="flex items-center justify-between gap-3 px-2.5 py-2 rounded-md text-sm font-medium transition-colors"
                 :class="
                   isActive(l.to)
                     ? 'bg-accent text-accent-foreground font-semibold shadow-2xs'
@@ -206,7 +206,7 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
                 <Badge
                   v-if="l.badge && l.badge() !== undefined"
                   variant="secondary"
-                  class="font-mono text-[10px] py-0 px-1.5"
+                  class="font-mono text-xs py-0.5 px-2"
                 >
                   {{ l.badge() }}
                 </Badge>
@@ -218,7 +218,7 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
         <!-- Sidebar Telemetry Footer -->
         <div v-if="sys.data.value" class="p-3 border-t border-sidebar bg-sidebar/50 space-y-3">
           <div class="space-y-1.5">
-            <div class="flex items-center justify-between text-[11px] font-mono text-muted-foreground">
+            <div class="flex items-center justify-between text-xs font-mono text-muted-foreground">
               <span>CPU Host</span>
               <span class="font-medium text-foreground">{{ cpuPct.toFixed(1) }}%</span>
             </div>
@@ -231,7 +231,7 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
           </div>
 
           <div class="space-y-1.5">
-            <div class="flex items-center justify-between text-[11px] font-mono text-muted-foreground">
+            <div class="flex items-center justify-between text-xs font-mono text-muted-foreground">
               <span>RAM Host</span>
               <span class="font-medium text-foreground">{{ ramPct.toFixed(1) }}%</span>
             </div>
@@ -248,7 +248,7 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
       <!-- Main Scrollable Content Area -->
       <main class="flex-1 min-w-0 overflow-y-auto">
         <!-- Toast / Notice alert -->
-        <div v-if="notice" class="p-4 pb-0 max-w-7xl mx-auto">
+        <div v-if="notice" class="p-4 pb-0 w-full">
           <div
             class="flex items-center justify-between gap-3 p-3 rounded-lg border text-xs"
             :class="

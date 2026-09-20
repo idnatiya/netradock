@@ -27,13 +27,13 @@ async function remove(n: Network) {
     <!-- Page Header -->
     <PageHeader title="Networks">
       <template #meta>
-        <span v-if="data" class="font-mono text-xs text-muted-foreground">
+        <span v-if="data" class="font-mono text-sm text-muted-foreground">
           {{ data.length }} network{{ data.length === 1 ? '' : 's' }}
         </span>
       </template>
     </PageHeader>
 
-    <div class="p-6 max-w-7xl mx-auto space-y-4">
+    <div class="p-6 w-full space-y-4">
       <div class="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
         <LoadState :loading="loading" :error="error" :empty="sorted.length === 0" what="networks" @retry="reload">
           <template #empty>
@@ -48,17 +48,17 @@ async function remove(n: Network) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Network Name</TableHead>
-                <TableHead>Network ID</TableHead>
-                <TableHead>Driver</TableHead>
-                <TableHead>Scope</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead class="text-right w-24">Action</TableHead>
+                <TableHead class="text-sm">Network Name</TableHead>
+                <TableHead class="text-sm">Network ID</TableHead>
+                <TableHead class="text-sm">Driver</TableHead>
+                <TableHead class="text-sm">Scope</TableHead>
+                <TableHead class="text-sm">Created</TableHead>
+                <TableHead class="text-sm text-right w-24">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow v-for="n in sorted" :key="n.id">
-                <TableCell class="font-mono text-xs font-semibold text-foreground break-all">
+                <TableCell class="font-mono text-sm font-semibold text-foreground break-all">
                   {{ n.name }}
                 </TableCell>
                 <TableCell class="font-mono text-xs text-muted-foreground">
@@ -74,7 +74,7 @@ async function remove(n: Network) {
                   {{ ago(n.created) }}
                 </TableCell>
                 <TableCell class="text-right">
-                  <Badge v-if="BUILTIN.has(n.name)" variant="secondary" class="font-mono text-[10px]">
+                  <Badge v-if="BUILTIN.has(n.name)" variant="secondary" class="font-mono text-xs py-0.5 px-2">
                     builtin
                   </Badge>
                   <Button

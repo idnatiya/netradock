@@ -84,37 +84,41 @@ async function start(c: Container) {
 </script>
 
 <template>
-  <div class="p-6 max-w-7xl mx-auto space-y-6">
+  <div class="p-6 w-full space-y-6">
     <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-border">
       <div class="space-y-1">
         <div class="flex items-center gap-2">
           <h1 class="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          <Badge v-if="live.connected.value" variant="success" class="gap-1 font-mono text-[10px]">
+          <Badge v-if="live.connected.value" variant="success" class="gap-1.5 font-mono text-xs px-2 py-0.5">
             <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse-dot" />
             LIVE
           </Badge>
         </div>
-        <p class="text-xs text-muted-foreground">
+        <p class="text-sm text-muted-foreground">
           Real-time container infrastructure telemetry and host diagnostics.
         </p>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2.5">
         <Button
           variant="outline"
           size="sm"
           :disabled="refreshing"
-          class="gap-1.5 text-xs h-8"
+          class="gap-1.5 text-xs font-medium h-8.5 px-3"
           @click="refreshAll"
         >
           <RotateCcw class="size-3.5" :class="{ 'animate-spin': refreshing }" />
           <span>Refresh</span>
         </Button>
         <RouterLink to="/containers">
-          <Button size="sm" class="gap-1.5 text-xs h-8">
-            <Boxes class="size-3.5" />
+          <Button
+            size="sm"
+            class="gap-2 text-xs font-semibold h-8.5 px-3.5 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 border border-primary/20 cursor-pointer"
+          >
+            <Boxes class="size-4" />
             <span>Manage Containers</span>
+            <ArrowRight class="size-3.5 opacity-80" />
           </Button>
         </RouterLink>
       </div>
@@ -211,7 +215,7 @@ async function start(c: Container) {
           </div>
           <div class="text-right">
             <div class="text-2xl font-bold font-mono text-foreground">{{ pct(cpuNow) }}</div>
-            <div class="text-[10px] font-mono text-muted-foreground">Utilization</div>
+            <div class="text-xs font-mono text-muted-foreground">Utilization</div>
           </div>
         </CardHeader>
         <CardContent class="pt-2">
@@ -230,7 +234,7 @@ async function start(c: Container) {
           </div>
           <div class="text-right">
             <div class="text-2xl font-bold font-mono text-foreground">{{ pct(memPct) }}</div>
-            <div class="text-[10px] font-mono text-muted-foreground">RAM Allocated</div>
+            <div class="text-xs font-mono text-muted-foreground">RAM Allocated</div>
           </div>
         </CardHeader>
         <CardContent class="space-y-2 pt-2">
@@ -241,7 +245,7 @@ async function start(c: Container) {
               :style="{ width: `${Math.min(100, memPct)}%` }"
             />
           </div>
-          <div class="flex justify-between text-[11px] font-mono text-muted-foreground">
+          <div class="flex justify-between text-xs font-mono text-muted-foreground">
             <span>Free: {{ bytes(Math.max(0, memTotal - memNow)) }}</span>
             <span>Total: {{ bytes(memTotal) }}</span>
           </div>
@@ -318,7 +322,7 @@ async function start(c: Container) {
                     :style="{ width: `${Math.min(100, Math.max(4, s.cpu_percent / ncpu))}%` }"
                   />
                 </div>
-                <div class="text-[10px] font-mono text-muted-foreground">
+                <div class="text-xs font-mono text-muted-foreground">
                   {{ bytes(s.mem_usage) }} RAM
                 </div>
               </div>
@@ -373,7 +377,7 @@ async function start(c: Container) {
                 <span>Images</span>
               </div>
               <div class="text-base font-bold font-mono text-foreground">{{ bytes(imageSize) }}</div>
-              <div class="text-[11px] text-muted-foreground font-mono">{{ images.data.value?.length ?? 0 }} items</div>
+              <div class="text-xs text-muted-foreground font-mono">{{ images.data.value?.length ?? 0 }} items</div>
             </div>
 
             <div class="space-y-1">
@@ -382,7 +386,7 @@ async function start(c: Container) {
                 <span>Volumes</span>
               </div>
               <div class="text-base font-bold font-mono text-foreground">{{ volumes.data.value?.length ?? 0 }}</div>
-              <div class="text-[11px] text-muted-foreground font-mono">mounted disks</div>
+              <div class="text-xs text-muted-foreground font-mono">mounted disks</div>
             </div>
 
             <div class="space-y-1">
@@ -391,7 +395,7 @@ async function start(c: Container) {
                 <span>Containers</span>
               </div>
               <div class="text-base font-bold font-mono text-foreground">{{ containers.length }}</div>
-              <div class="text-[11px] text-muted-foreground font-mono">{{ running }} active</div>
+              <div class="text-xs text-muted-foreground font-mono">{{ running }} active</div>
             </div>
           </div>
 
@@ -400,13 +404,13 @@ async function start(c: Container) {
             <span class="text-xs text-muted-foreground">Manage storage resources</span>
             <div class="flex items-center gap-2">
               <RouterLink to="/images">
-                <Button variant="outline" size="sm" class="h-7 text-xs gap-1">
+                <Button variant="outline" size="sm" class="h-8 text-xs gap-1">
                   <span>Images</span>
                   <ArrowRight class="size-3" />
                 </Button>
               </RouterLink>
               <RouterLink to="/volumes">
-                <Button variant="outline" size="sm" class="h-7 text-xs gap-1">
+                <Button variant="outline" size="sm" class="h-8 text-xs gap-1">
                   <span>Volumes</span>
                   <ArrowRight class="size-3" />
                 </Button>
@@ -424,7 +428,7 @@ async function start(c: Container) {
             <CardDescription class="text-xs">Containers currently not running on this host</CardDescription>
           </div>
           <RouterLink to="/containers">
-            <Button variant="ghost" size="sm" class="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="sm" class="h-8 text-xs gap-1 text-muted-foreground hover:text-foreground">
               <span>View all</span>
               <ChevronRight class="size-3.5" />
             </Button>
@@ -447,9 +451,9 @@ async function start(c: Container) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Container</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead class="text-right">Action</TableHead>
+                  <TableHead class="text-sm">Container</TableHead>
+                  <TableHead class="text-sm">Status</TableHead>
+                  <TableHead class="text-sm text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -458,7 +462,7 @@ async function start(c: Container) {
                     <RouterLink :to="`/containers/${c.id}`" class="font-medium text-foreground hover:underline truncate block max-w-[180px]">
                       {{ c.name }}
                     </RouterLink>
-                    <div class="text-[11px] font-mono text-muted-foreground truncate max-w-[180px]">
+                    <div class="text-xs font-mono text-muted-foreground truncate max-w-[180px]">
                       {{ c.image }}
                     </div>
                   </TableCell>
