@@ -26,7 +26,7 @@ onMounted(() => {
     disableStdin: !props.interactive,
     cursorBlink: props.interactive,
     scrollback: 5000,
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    fontFamily: "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
     fontSize: 13,
     theme: { background: '#181d26', foreground: '#e6e8eb', cursor: '#e6e8eb', selectionBackground: '#41454d' },
   })
