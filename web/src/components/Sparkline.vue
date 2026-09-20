@@ -13,7 +13,7 @@ const props = withDefaults(
     capacity: 60,
     floor: 1,
     height: 36,
-    color: 'var(--tblr-primary)',
+    color: 'hsl(var(--primary))',
   },
 )
 

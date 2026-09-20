@@ -1,56 +1,96 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Network as NetIcon, Trash2 } from 'lucide-vue-next'
 import { api, type Network } from '@/api'
 import { removeResource } from '@/actions'
 import { ago, shortId } from '@/format'
-import { IconNetwork, IconTrash } from '@tabler/icons-vue'
+import { useLoad } from '@/useLoad'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import LoadState from '@/components/LoadState.vue'
 import PageHeader from '@/components/PageHeader.vue'
-import { useLoad } from '@/useLoad'
 
-// Docker's predefined networks cannot be removed.
+// Docker predefined networks cannot be removed
 const BUILTIN = new Set(['bridge', 'host', 'none'])
 
 const { data, error, loading, reload } = useLoad(() => api<Network[]>('GET', '/networks'))
 const sorted = computed(() => [...(data.value ?? [])].sort((a, b) => a.name.localeCompare(b.name)))
 
 async function remove(n: Network) {
-  if (await removeResource('Network', n.name, `/networks/${n.id}`, 'Docker menolak jika masih ada container yang terhubung.')) await reload()
+  if (await removeResource('Network', n.name, `/networks/${n.id}`, 'Docker rejects removal if any container is still connected.')) await reload()
 }
 </script>
 
 <template>
-  <PageHeader title="Networks">
-    <template #meta>
-      <div v-if="data" class="text-secondary mt-1">{{ data.length }} network</div>
-    </template>
-  </PageHeader>
-  <div class="page-body">
-    <div class="container-xl">
-      <div>
-        <LoadState :loading="loading" :error="error" :empty="sorted.length === 0" what="network" @retry="reload">
+  <div>
+    <!-- Page Header -->
+    <PageHeader title="Networks">
+      <template #meta>
+        <span v-if="data" class="font-mono text-xs text-muted-foreground">
+          {{ data.length }} network{{ data.length === 1 ? '' : 's' }}
+        </span>
+      </template>
+    </PageHeader>
+
+    <div class="p-6 max-w-7xl mx-auto space-y-4">
+      <div class="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
+        <LoadState :loading="loading" :error="error" :empty="sorted.length === 0" what="networks" @retry="reload">
           <template #empty>
-            <div class="empty-icon"><IconNetwork :size="40" /></div>
-            <p class="empty-title">Tidak ada network</p>
+            <div class="p-12 text-center space-y-3">
+              <div class="size-12 rounded-xl bg-muted text-muted-foreground flex items-center justify-center mx-auto">
+                <NetIcon class="size-6" />
+              </div>
+              <h3 class="text-base font-semibold text-foreground">No Networks Found</h3>
+            </div>
           </template>
-          <div class="table-responsive-md">
-            <table class="table table-vcenter table-stack dd-table">
-              <thead><tr><th>Nama</th><th>ID</th><th>Driver</th><th>Scope</th><th>Dibuat</th><th class="w-1"><span class="visually-hidden">Aksi</span></th></tr></thead>
-              <tbody>
-                <tr v-for="n in sorted" :key="n.id">
-                  <td class="font-monospace text-break-all">{{ n.name }}</td>
-                  <td data-label="ID" class="font-monospace text-secondary">{{ shortId(n.id) }}</td>
-                  <td data-label="Driver">{{ n.driver }}</td>
-                  <td data-label="Scope">{{ n.scope }}</td>
-                  <td data-label="Dibuat" class="text-secondary">{{ ago(n.created) }}</td>
-                  <td class="text-end">
-                    <span v-if="BUILTIN.has(n.name)" class="badge bg-secondary-lt">bawaan Docker</span>
-                    <button v-else class="btn btn-icon btn-ghost-danger" type="button" :aria-label="`Hapus ${n.name}`" title="Hapus" @click="remove(n)"><IconTrash :size="18" /></button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Network Name</TableHead>
+                <TableHead>Network ID</TableHead>
+                <TableHead>Driver</TableHead>
+                <TableHead>Scope</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead class="text-right w-24">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="n in sorted" :key="n.id">
+                <TableCell class="font-mono text-xs font-semibold text-foreground break-all">
+                  {{ n.name }}
+                </TableCell>
+                <TableCell class="font-mono text-xs text-muted-foreground">
+                  {{ shortId(n.id) }}
+                </TableCell>
+                <TableCell class="text-xs text-muted-foreground font-mono">
+                  {{ n.driver }}
+                </TableCell>
+                <TableCell class="text-xs text-muted-foreground font-mono">
+                  {{ n.scope }}
+                </TableCell>
+                <TableCell class="text-xs text-muted-foreground whitespace-nowrap">
+                  {{ ago(n.created) }}
+                </TableCell>
+                <TableCell class="text-right">
+                  <Badge v-if="BUILTIN.has(n.name)" variant="secondary" class="font-mono text-[10px]">
+                    builtin
+                  </Badge>
+                  <Button
+                    v-else
+                    variant="ghost"
+                    size="icon-sm"
+                    class="size-7 text-muted-foreground hover:text-destructive"
+                    :title="`Delete network ${n.name}`"
+                    @click="remove(n)"
+                  >
+                    <Trash2 class="size-3.5" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </LoadState>
       </div>
     </div>

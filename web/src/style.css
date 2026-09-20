@@ -1,186 +1,77 @@
-/* Small additions on top of Tabler; colors come from --tblr-* so both themes work. */
+@import "tailwindcss";
 
-/* Docker Desktop palette mapped onto Tabler's tokens. */
-:root, [data-bs-theme] {
-  --tblr-primary: #1d63ed;
-  --tblr-primary-rgb: 29, 99, 237;
-  --tblr-primary-darken: color-mix(in oklab, #1d63ed, black 15%);
-  --tblr-primary-lt: color-mix(in oklab, #1d63ed 10%, transparent);
-  --tblr-link-color: #1d63ed;
-  --tblr-link-color-rgb: 29, 99, 237;
-  --tblr-link-hover-color: color-mix(in oklab, #1d63ed, black 15%);
-  --tblr-font-sans-serif: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --tblr-body-font-family: var(--tblr-font-sans-serif);
-  --tblr-body-font-size: 0.875rem;
-  --tblr-border-radius: 6px;
-  --tblr-border-radius-sm: 4px;
-  --nav-width: 232px;
-  --statusbar-height: 28px;
-  /* The title bar stays blue in both themes, like Docker Desktop. */
-  --topbar-height: 48px;
-  --topbar-bg: #1d63ed;
-  --topbar-border: rgba(0, 0, 0, 0.15);
-  --topbar-fg: #ffffff;
-}
-:root, [data-bs-theme='light'] {
-  --tblr-body-bg: #ffffff;
-  --tblr-body-color: #17191e;
-  --tblr-bg-surface: #ffffff;
-  --tblr-bg-surface-secondary: #f6f7f8;
-  --tblr-border-color: #e5e7eb;
-  --tblr-border-color-translucent: rgb(23 25 30 / 0.08);
-  --tblr-secondary: #677285;
-  --nav-bg: #f1f2f4;
-  --nav-border: #e2e4e9;
-  --statusbar-bg: #f1f2f4;
-}
-[data-bs-theme='dark'] {
-  --tblr-body-bg: #131a23;
-  --tblr-body-color: #e6e8eb;
-  --tblr-bg-surface: #1a212b;
-  --tblr-bg-surface-secondary: #1c2530;
-  --tblr-border-color: rgb(255 255 255 / 0.09);
-  --tblr-border-color-translucent: rgb(230 232 235 / 0.1);
-  --tblr-secondary: #8993a4;
-  --tblr-link-color: #5b8ff5;
-  --tblr-link-color-rgb: 91, 143, 245;
-  --tblr-link-hover-color: #85acf8;
-  --nav-bg: #0d1117;
-  --nav-border: #000000;
-  --statusbar-bg: #0d1117;
-}
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
 
-body {
-  font-family: var(--tblr-font-sans-serif);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+    /* Status colors */
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 355.7 100% 97.3%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 89%;
+  }
 
-.brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--tblr-border-radius);
-  background: var(--tblr-primary);
-  color: #fff;
-}
+  .dark {
+    --background: 240 10% 3.9%; /* #09090b */
+    --foreground: 0 0% 98%;
+    --card: 240 10% 5.9%; /* #0f0f12 */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 5.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%; /* #27272a */
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
 
-/* Docker Desktop keeps the window fixed and scrolls only the content pane. */
-#app { display: block; min-height: 100dvh; }
-.min-w-0 { min-width: 0; }
-.text-break-all { overflow-wrap: anywhere; }
+    /* Status colors */
+    --success: 142 71% 45%;
+    --success-foreground: 144 100% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 89%;
+  }
 
-/* Docker Desktop uses the full window width; Tabler's container caps it at 1320px. */
-.page-wrapper .container-xl { max-width: none; padding-inline: 1.5rem; }
+  * {
+    border-color: hsl(var(--border));
+  }
 
-/* Dark sidebar uses a neutral pill for the active item, like Docker Desktop. */
-[data-bs-theme='dark'] .nav-item.active {
-  background: color-mix(in oklab, var(--tblr-body-color) 10%, transparent);
-  color: var(--tblr-body-color);
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
-/* Docker Desktop's list tables: no card frame, tiny caps headers, dense rows. */
-.dd-table { margin-bottom: 0; font-size: 13px; }
-.dd-table thead th {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--tblr-secondary);
-  background: transparent;
-  border-top: 0;
-  border-bottom: var(--tblr-border-width) solid var(--tblr-border-color);
-  padding: 0.5rem 0.75rem;
-  white-space: nowrap;
-}
-.dd-table tbody td { padding: 0.55rem 0.75rem; }
-.dd-table tbody tr:hover { background: var(--tblr-bg-surface-secondary); }
-
-.json-view {
-  margin: 0;
-  max-height: 70vh;
-  overflow: auto;
-  padding: 1rem;
-  background: var(--tblr-bg-surface-secondary);
-  color: var(--tblr-body-color);
-  border-radius: var(--tblr-border-radius);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-/* Phones: data tables reflow into stacked rows instead of scrolling sideways. */
-@media (max-width: 767.98px) {
-  .table-stack thead { display: none; }
-  .table-stack, .table-stack tbody, .table-stack tr, .table-stack td { display: block; width: 100%; }
-  .table-stack tr { padding: 0.75rem 0; border-bottom: var(--tblr-border-width) solid var(--tblr-border-color); }
-  .table-stack.card-table tr { padding: 0.75rem 1rem; }
-  .table-stack td { border: 0 !important; padding: 0.15rem 0 !important; overflow-wrap: anywhere; }
-  .table-stack td[data-label]::before { content: attr(data-label) ': '; color: var(--tblr-secondary); }
-  .table-stack td.text-end { text-align: left !important; padding-top: 0.5rem !important; }
-}
-
-/* Card & UI modernizations */
-.card {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  border: 1px solid var(--tblr-border-color);
-  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
-}
-.card-link {
-  text-decoration: none;
-  color: inherit;
-}
-.card-link:hover {
-  border-color: var(--tblr-primary);
-  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
-[data-bs-theme='dark'] .card-link:hover {
-  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.35);
-}
-
-/* Status animation */
-.status-dot-animated {
-  animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.85); }
-}
-
-/* Metric typography */
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Card KPI hover glow */
-.card-kpi {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
-}
-.card-kpi.card-link:hover {
-  transform: translateY(-2px);
-  border-color: var(--tblr-primary);
-  box-shadow: 0 6px 16px -2px rgba(29, 99, 237, 0.14);
-}
-[data-bs-theme='dark'] .card-kpi.card-link:hover {
-  box-shadow: 0 6px 20px -2px rgba(29, 99, 237, 0.3);
-}
-
-/* Sidebar navigation groups */
-.nav-group-header {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--tblr-secondary);
-  padding: 0.65rem 0.625rem 0.25rem;
-  user-select: none;
-}
-
-/* Slim custom scrollbar */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -189,10 +80,19 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--tblr-border-color-translucent);
-  border-radius: 3px;
+  background: hsl(var(--border));
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--tblr-secondary);
+  background: hsl(var(--muted-foreground));
 }
 
+/* Animations */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

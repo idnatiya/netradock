@@ -19,7 +19,7 @@ async function show() {
   document.addEventListener('click', onDocClick)
   document.addEventListener('keydown', onKey)
   await nextTick()
-  root.value?.querySelector<HTMLElement>('.dropdown-item')?.focus()
+  root.value?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
 }
 function close(refocus: boolean) {
   open.value = false
@@ -31,7 +31,7 @@ onUnmounted(() => close(false))
 </script>
 
 <template>
-  <div ref="root" class="dropdown d-inline-block">
+  <div ref="root" class="relative inline-block text-left">
     <button
       ref="toggle"
       type="button"
@@ -44,13 +44,14 @@ onUnmounted(() => close(false))
     >
       <slot name="toggle" />
     </button>
-    <div v-if="open" class="dropdown-menu show" :class="{ 'dropdown-menu-end': end }" role="menu" @click="close(false)">
+    <div
+      v-if="open"
+      class="absolute mt-1.5 z-50 min-w-[8rem] overflow-hidden rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95"
+      :class="end ? 'right-0' : 'left-0'"
+      role="menu"
+      @click="close(false)"
+    >
       <slot />
     </div>
   </div>
 </template>
-
-<style scoped>
-.dropdown-menu { position: absolute; top: 100%; z-index: 1050; margin-top: 4px; }
-.dropdown-menu-end { right: 0; left: auto; }
-</style>

@@ -1,26 +1,55 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Badge } from '@/components/ui/badge'
 
 const props = defineProps<{ state: string; label?: string; dot?: boolean }>()
 
-// Tabler status colors; the text always names the state, so color is never the only signal.
-const color = computed(() => ({ running: 'green', exited: 'red', dead: 'red', paused: 'yellow', restarting: 'yellow' })[props.state] ?? 'secondary')
+const variant = computed(() => {
+  switch (props.state) {
+    case 'running':
+      return 'success'
+    case 'exited':
+    case 'dead':
+      return 'destructive'
+    case 'paused':
+    case 'restarting':
+      return 'warning'
+    default:
+      return 'secondary'
+  }
+})
+
+const dotColor = computed(() => {
+  switch (props.state) {
+    case 'running':
+      return 'bg-emerald-500'
+    case 'exited':
+    case 'dead':
+      return 'bg-rose-500'
+    case 'paused':
+    case 'restarting':
+      return 'bg-amber-500'
+    default:
+      return 'bg-muted-foreground'
+  }
+})
+
 const text = computed(() => props.label ?? props.state)
 </script>
 
 <template>
-  <!-- Docker Desktop's list shows the dot alone; the words stay available as a tooltip. -->
-  <span v-if="dot" class="status status-dot-only" :class="`status-${color}`" :title="text">
-    <span class="status-dot" :class="{ 'status-dot-animated': state === 'restarting' }"></span>
-    <span class="visually-hidden">{{ text }}</span>
+  <span v-if="dot" class="inline-flex items-center" :title="text">
+    <span
+      class="inline-block size-2 rounded-full"
+      :class="[dotColor, { 'animate-pulse-dot': state === 'restarting' }]"
+    />
+    <span class="sr-only">{{ text }}</span>
   </span>
-  <span v-else class="status" :class="`status-${color}`">
-    <span class="status-dot" :class="{ 'status-dot-animated': state === 'restarting' }"></span>
-    {{ text }}
-  </span>
+  <Badge v-else :variant="variant" class="font-mono text-[11px] font-normal tracking-tight">
+    <span
+      class="inline-block size-1.5 rounded-full"
+      :class="[dotColor, { 'animate-pulse-dot': state === 'restarting' }]"
+    />
+    <span>{{ text }}</span>
+  </Badge>
 </template>
-
-<style scoped>
-.status { white-space: normal; height: auto; min-height: var(--tblr-status-height); text-align: left; }
-.status-dot-only { min-height: 0; padding: 0; background: transparent; }
-</style>

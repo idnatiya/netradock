@@ -14,11 +14,19 @@ function initial(): Theme {
 }
 
 export const theme = ref<Theme>(initial())
-document.documentElement.dataset.bsTheme = theme.value
+function applyTheme(t: Theme) {
+  document.documentElement.dataset.bsTheme = t
+  if (t === 'dark') {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}
+applyTheme(theme.value)
 
 export function toggleTheme() {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
-  document.documentElement.dataset.bsTheme = theme.value
+  applyTheme(theme.value)
   try {
     localStorage.setItem(KEY, theme.value)
   } catch {

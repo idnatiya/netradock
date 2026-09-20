@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
-import { IconAlertTriangle } from '@tabler/icons-vue'
+import { AlertTriangle } from 'lucide-vue-next'
 import { pending } from '@/confirm'
+import { Button } from '@/components/ui/button'
 
 const dialog = ref<HTMLDialogElement>()
 let trigger: HTMLElement | null = null
@@ -22,22 +23,35 @@ function close(ok: boolean) {
 </script>
 
 <template>
-  <!-- Native dialog: focus trap and Escape come from the browser; Tabler supplies the modal look. -->
-  <dialog ref="dialog" class="confirm" aria-labelledby="confirm-title" @cancel.prevent="close(false)">
-    <div v-if="pending" class="modal-content">
-      <div class="modal-status bg-danger"></div>
-      <div class="modal-body text-center py-4">
-        <IconAlertTriangle :size="40" class="text-danger mb-2" />
-        <h3 id="confirm-title">{{ pending.title }}</h3>
-        <div class="text-secondary text-break-all">{{ pending.body }}</div>
-      </div>
-      <div class="modal-footer">
-        <div class="w-100">
-          <div class="row g-2">
-            <div class="col"><button class="btn w-100" type="button" autofocus @click="close(false)">Batal</button></div>
-            <div class="col"><button class="btn btn-danger w-100" type="button" @click="close(true)">{{ pending.action }}</button></div>
-          </div>
+  <dialog
+    ref="dialog"
+    class="confirm backdrop:bg-black/60 backdrop:backdrop-blur-xs m-auto rounded-xl border border-border bg-card p-0 text-card-foreground shadow-xl focus:outline-none"
+    aria-labelledby="confirm-title"
+    @cancel.prevent="close(false)"
+  >
+    <div v-if="pending" class="p-6 space-y-4 max-w-sm">
+      <div class="flex items-center gap-3">
+        <div class="size-10 rounded-full bg-destructive/15 text-destructive flex items-center justify-center shrink-0">
+          <AlertTriangle class="size-5" />
         </div>
+        <div>
+          <h3 id="confirm-title" class="text-base font-semibold text-foreground">
+            {{ pending.title }}
+          </h3>
+        </div>
+      </div>
+
+      <div class="text-xs text-muted-foreground break-words leading-relaxed pl-13">
+        {{ pending.body }}
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">
+        <Button variant="outline" size="sm" type="button" autofocus @click="close(false)">
+          Cancel
+        </Button>
+        <Button variant="destructive" size="sm" type="button" @click="close(true)">
+          {{ pending.action }}
+        </Button>
       </div>
     </div>
   </dialog>
@@ -45,13 +59,6 @@ function close(ok: boolean) {
 
 <style scoped>
 .confirm {
-  width: min(380px, calc(100vw - 32px));
-  padding: 0;
-  border: 0;
-  border-radius: var(--tblr-border-radius-lg);
-  background: transparent;
-  color: var(--tblr-body-color);
+  width: min(420px, calc(100vw - 32px));
 }
-.confirm .modal-content { position: relative; background: var(--tblr-bg-surface); }
-.confirm::backdrop { background: rgb(24 36 51 / 0.5); }
 </style>

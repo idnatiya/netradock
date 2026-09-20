@@ -1,18 +1,35 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { IconBox, IconCheck, IconChevronDown, IconChevronRight, IconCopy, IconDotsVertical, IconFileText, IconPlayerPlay, IconPlayerStop, IconRefresh, IconSearch, IconTerminal2, IconTrash } from '@tabler/icons-vue'
+import {
+  Boxes,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  FileText,
+  Play,
+  RotateCcw,
+  Search,
+  Square,
+  Terminal,
+  Trash2,
+  X,
+} from 'lucide-vue-next'
 import { api, notify, type Container, type Stats, type System } from '@/api'
 import { containerAction } from '@/actions'
 import { confirm } from '@/confirm'
+import { bytes, shortId } from '@/format'
+import { useLiveStats } from '@/liveStats'
+import { useLoad } from '@/useLoad'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import LoadState from '@/components/LoadState.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import PortLinks from '@/components/PortLinks.vue'
 import StateBadge from '@/components/StateBadge.vue'
-import Dropdown from '@/components/Dropdown.vue'
-import { bytes, shortId } from '@/format'
-import { useLiveStats } from '@/liveStats'
-import { useLoad } from '@/useLoad'
 
 const { data, error, loading, reload } = useLoad(() => api<Container[]>('GET', '/containers?all=true'), 5000)
 const sys = useLoad(() => api<System>('GET', '/system'), 30000)
@@ -25,7 +42,7 @@ const collapsed = ref(new Set<string>())
 const selected = ref(new Set<string>())
 const live = useLiveStats()
 
-// Compose projects become collapsible groups, like Docker Desktop; standalone containers go last.
+// Compose projects become collapsible groups, standalone containers go last
 const groups = computed(() => {
   const q = query.value.trim().toLowerCase()
   const items = (data.value ?? [])
@@ -47,7 +64,6 @@ const someChecked = computed(() => !allChecked.value && shown.value.some((c) => 
 const stats = (id: string): Stats | undefined => live.latest.value[id]
 const memPct = (s: Stats) => (s.mem_limit ? (s.mem_usage / s.mem_limit) * 100 : 0)
 
-// Docker Desktop's group row sums its children: usage and limit add up, percentages add up too.
 function groupStats(items: Container[]) {
   let cpu = 0, usage = 0, limit = 0, pct = 0, n = 0
   for (const c of items) {
@@ -62,7 +78,6 @@ function groupStats(items: Container[]) {
   return n ? { cpu, usage, limit, pct } : null
 }
 
-// Host-wide readouts in the page header, like Docker Desktop's two usage lines.
 const hostCpu = computed(() => live.total.cpu.at(-1) ?? 0)
 const hostCpuMax = computed(() => (sys.data.value?.ncpu ?? 0) * 100)
 const hostMem = computed(() => live.total.mem.at(-1) ?? 0)
@@ -73,7 +88,7 @@ async function copyId(c: Container) {
     copied.value = c.id
     setTimeout(() => (copied.value === c.id) && (copied.value = null), 1200)
   } catch {
-    notify('error', 'Browser menolak akses clipboard.')
+    notify('error', 'Browser denied clipboard access.')
   }
 }
 
@@ -90,7 +105,6 @@ function pickGroup(items: Container[], on: boolean) {
   for (const c of items) pick(c.id, on)
 }
 
-// Containers can disappear between polls; never keep a stale id selected.
 watch(data, (list) => {
   const ids = new Set((list ?? []).map((c) => c.id))
   for (const id of [...selected.value]) if (!ids.has(id)) selected.value.delete(id)
@@ -102,18 +116,17 @@ async function act(c: Container, action: 'start' | 'stop' | 'restart' | 'remove'
   busy.value = null
 }
 
-const bulkLabels = { start: 'Jalankan', stop: 'Hentikan', restart: 'Restart', remove: 'Hapus' } as const
-const bulkVerbs = { start: 'dijalankan', stop: 'dihentikan', restart: 'di-restart', remove: 'dihapus' } as const
+const bulkLabels = { start: 'Start', stop: 'Stop', restart: 'Restart', remove: 'Remove' } as const
+const bulkVerbs = { start: 'started', stop: 'stopped', restart: 'restarted', remove: 'removed' } as const
 
-// One confirmation for the whole batch, so containerAction()'s per-item prompt is bypassed on purpose.
 async function bulk(action: keyof typeof bulkLabels) {
   const items = (data.value ?? []).filter((c) => selected.value.has(c.id))
   if (!items.length) return
   const names = items.map((c) => c.name).join(', ')
   const body = action === 'remove'
-    ? `${names}. Yang sedang berjalan dihentikan paksa, data di luar volume ikut hilang.`
+    ? `${names}. Running containers will be forcefully stopped.`
     : names
-  if (!(await confirm(`${bulkLabels[action]} ${items.length} container?`, body, bulkLabels[action]))) return
+  if (!(await confirm(`${bulkLabels[action]} ${items.length} containers?`, body, bulkLabels[action]))) return
 
   bulkBusy.value = true
   const results = await Promise.allSettled(items.map((c) =>
@@ -122,7 +135,7 @@ async function bulk(action: keyof typeof bulkLabels) {
       : api('POST', `/containers/${c.id}/${action}`)))
   const ok = results.filter((r) => r.status === 'fulfilled').length
   const failed = results.length - ok
-  notify(failed ? 'error' : 'ok', failed ? `${ok} berhasil, ${failed} gagal.` : `${ok} container ${bulkVerbs[action]}.`)
+  notify(failed ? 'error' : 'ok', failed ? `${ok} succeeded, ${failed} failed.` : `${ok} containers ${bulkVerbs[action]}.`)
   selected.value.clear()
   bulkBusy.value = false
   await reload()
@@ -130,206 +143,289 @@ async function bulk(action: keyof typeof bulkLabels) {
 </script>
 
 <template>
-  <PageHeader title="Containers">
-    <template #meta>
-      <div class="usage d-flex flex-wrap align-items-start gap-4 mt-2">
-        <div>
-          <div class="text-secondary small">Pemakaian CPU container</div>
-          <div class="text-green">
-            {{ hostCpu.toFixed(2) }}% / {{ hostCpuMax }}%
-            <span v-if="sys.data.value" class="text-secondary small">({{ sys.data.value.ncpu }} CPU tersedia)</span>
+  <div>
+    <!-- Page Header -->
+    <PageHeader title="Containers">
+      <template #meta>
+        <div class="flex flex-wrap items-center gap-4 text-xs font-mono text-muted-foreground mt-1">
+          <div>
+            <span>CPU: </span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-semibold">{{ hostCpu.toFixed(2) }}%</span>
+            <span> / {{ hostCpuMax }}%</span>
+          </div>
+          <span class="text-border">|</span>
+          <div>
+            <span>RAM: </span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-semibold">{{ bytes(hostMem) }}</span>
+            <span v-if="sys.data.value"> / {{ bytes(sys.data.value.mem_total) }}</span>
           </div>
         </div>
-        <div>
-          <div class="text-secondary small">Pemakaian memori container</div>
-          <div class="text-green">{{ bytes(hostMem) }}<span v-if="sys.data.value"> / {{ bytes(sys.data.value.mem_total) }}</span></div>
-        </div>
-        <RouterLink to="/" class="ms-md-auto align-self-center">Lihat grafik</RouterLink>
-      </div>
-    </template>
-  </PageHeader>
+      </template>
+    </PageHeader>
 
-  <div class="page-body">
-    <div class="container-xl">
-      <div class="toolbar d-flex flex-wrap align-items-center gap-3 mb-2">
-        <template v-if="selected.size">
-          <span class="fw-medium">{{ selected.size }} dipilih</span>
-          <div class="btn-list">
-            <button class="btn btn-sm" type="button" :disabled="bulkBusy" @click="bulk('start')"><IconPlayerPlay :size="16" class="icon" />Jalankan</button>
-            <button class="btn btn-sm" type="button" :disabled="bulkBusy" @click="bulk('stop')"><IconPlayerStop :size="16" class="icon" />Hentikan</button>
-            <button class="btn btn-sm" type="button" :disabled="bulkBusy" @click="bulk('restart')"><IconRefresh :size="16" class="icon" />Restart</button>
-            <button class="btn btn-sm btn-ghost-danger" type="button" :disabled="bulkBusy" @click="bulk('remove')"><IconTrash :size="16" class="icon" />Hapus</button>
+    <div class="p-6 max-w-7xl mx-auto space-y-4">
+      <!-- Toolbar -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <!-- Batch selection bar -->
+        <div v-if="selected.size" class="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" class="font-mono text-xs px-2.5 py-1">
+            {{ selected.size }} selected
+          </Badge>
+          <div class="flex items-center gap-1.5">
+            <Button size="sm" variant="outline" class="h-8 text-xs gap-1" :disabled="bulkBusy" @click="bulk('start')">
+              <Play class="size-3 fill-current" />
+              <span>Start</span>
+            </Button>
+            <Button size="sm" variant="outline" class="h-8 text-xs gap-1" :disabled="bulkBusy" @click="bulk('stop')">
+              <Square class="size-3 fill-current" />
+              <span>Stop</span>
+            </Button>
+            <Button size="sm" variant="outline" class="h-8 text-xs gap-1" :disabled="bulkBusy" @click="bulk('restart')">
+              <RotateCcw class="size-3" />
+              <span>Restart</span>
+            </Button>
+            <Button size="sm" variant="destructive" class="h-8 text-xs gap-1" :disabled="bulkBusy" @click="bulk('remove')">
+              <Trash2 class="size-3" />
+              <span>Remove</span>
+            </Button>
           </div>
-          <button class="btn btn-sm btn-ghost-secondary ms-auto" type="button" @click="selected.clear()">Batal pilih</button>
-        </template>
-        <template v-else>
-          <div class="input-icon search">
-            <span class="input-icon-addon"><IconSearch :size="18" /></span>
-            <input v-model="query" type="search" class="form-control" placeholder="Cari nama atau image" aria-label="Cari container">
+          <Button size="sm" variant="ghost" class="h-8 text-xs" @click="selected.clear()">
+            Clear selection
+          </Button>
+        </div>
+
+        <!-- Filter bar -->
+        <div v-else class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <div class="relative w-full sm:w-72">
+            <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+            <Input
+              v-model="query"
+              type="search"
+              placeholder="Filter by name or image..."
+              class="h-8 pl-8 text-xs"
+            />
           </div>
-          <label class="form-check form-switch mb-0">
-            <input v-model="onlyRunning" class="form-check-input" type="checkbox">
-            <span class="form-check-label">Hanya tampilkan container yang berjalan</span>
+
+          <label class="flex items-center gap-2 text-xs text-muted-foreground select-none cursor-pointer">
+            <input
+              v-model="onlyRunning"
+              type="checkbox"
+              class="rounded border-input text-primary focus:ring-ring size-3.5"
+            />
+            <span>Running only</span>
           </label>
-        </template>
+        </div>
+
+        <div class="text-xs text-muted-foreground font-mono">
+          {{ shown.length }} container{{ shown.length === 1 ? '' : 's' }}
+        </div>
       </div>
 
-      <div v-if="loading || error || shown.length === 0" class="card">
-        <LoadState :loading="loading" :error="error" :empty="shown.length === 0" what="container" @retry="reload">
+      <!-- Container Table Card -->
+      <div class="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
+        <LoadState :loading="loading" :error="error" :empty="shown.length === 0" what="containers" @retry="reload">
           <template #empty>
-            <div class="empty-icon"><IconBox :size="40" /></div>
-            <template v-if="!data?.length">
-              <p class="empty-title">Belum ada container</p>
-              <p class="empty-subtitle text-secondary">Jalankan container lewat <code>docker run</code> atau <code>docker compose up</code> di server, nanti muncul di sini.</p>
-            </template>
-            <template v-else>
-              <p class="empty-title">Tidak ada yang cocok</p>
-              <p class="empty-subtitle text-secondary">Ubah kata kunci atau matikan "Hanya tampilkan container yang berjalan".</p>
-              <div class="empty-action">
-                <button class="btn" type="button" @click="query = ''; onlyRunning = false">Hapus filter</button>
+            <div class="p-12 text-center space-y-3">
+              <div class="size-12 rounded-xl bg-muted text-muted-foreground flex items-center justify-center mx-auto">
+                <Boxes class="size-6" />
               </div>
-            </template>
+              <template v-if="!data?.length">
+                <h3 class="text-base font-semibold text-foreground">No Containers Found</h3>
+                <p class="text-xs text-muted-foreground max-w-sm mx-auto">
+                  Launch a container via <code>docker run</code> or <code>docker compose up</code> and it will appear here in real-time.
+                </p>
+              </template>
+              <template v-else>
+                <h3 class="text-base font-semibold text-foreground">No Matching Containers</h3>
+                <p class="text-xs text-muted-foreground">Adjust your search query or disable the "Running only" filter.</p>
+                <Button size="sm" variant="outline" class="mt-2 text-xs" @click="query = ''; onlyRunning = false">
+                  Reset filters
+                </Button>
+              </template>
+            </div>
           </template>
-        </LoadState>
-      </div>
 
-      <template v-else>
-        <div class="table-responsive-md">
-          <table class="table table-vcenter table-stack dd-table containers">
-            <thead>
-              <tr>
-                <th class="pick">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead class="w-10">
                   <input
-                    class="form-check-input m-0"
                     type="checkbox"
-                    aria-label="Pilih semua container"
+                    class="rounded border-input text-primary focus:ring-ring size-3.5"
+                    aria-label="Select all containers"
                     :checked="allChecked"
                     :indeterminate="someChecked"
                     @change="pickAll(($event.target as HTMLInputElement).checked)"
-                  >
-                </th>
-                <th class="dot"><span class="visually-hidden">Status</span></th>
-                <th>Name</th>
-                <th>Container ID</th>
-                <th>Image</th>
-                <th>Port(s)</th>
-                <th>CPU (%)</th>
-                <th>Memory usage</th>
-                <th>Memory (%)</th>
-                <th>Network I/O</th>
-                <th class="actions-col">Actions</th>
-              </tr>
-            </thead>
-            <tbody v-for="[project, items] in groups" :key="project">
-              <tr v-if="project">
-                <td class="pick">
+                  />
+                </TableHead>
+                <TableHead class="w-8" />
+                <TableHead>Name</TableHead>
+                <TableHead>Container ID</TableHead>
+                <TableHead>Image</TableHead>
+                <TableHead>Port(s)</TableHead>
+                <TableHead class="text-right">CPU</TableHead>
+                <TableHead class="text-right">Memory</TableHead>
+                <TableHead class="text-right w-28">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody v-for="[project, items] in groups" :key="project">
+              <!-- Docker Compose Project Header Row -->
+              <TableRow v-if="project" class="bg-muted/40 font-medium">
+                <TableCell class="w-10">
                   <input
-                    class="form-check-input m-0"
                     type="checkbox"
-                    :aria-label="`Pilih semua di ${project}`"
+                    class="rounded border-input text-primary focus:ring-ring size-3.5"
+                    :aria-label="`Select all in ${project}`"
                     :checked="items.every((c) => selected.has(c.id))"
                     @change="pickGroup(items, ($event.target as HTMLInputElement).checked)"
+                  />
+                </TableCell>
+                <TableCell class="w-8" />
+                <TableCell colspan="4">
+                  <button
+                    type="button"
+                    class="flex items-center gap-1.5 text-xs font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
+                    @click="toggleGroup(project)"
                   >
-                </td>
-                <td class="dot"></td>
-                <td>
-                  <button type="button" class="group-toggle" :aria-expanded="!collapsed.has(project)" @click="toggleGroup(project)">
-                    <IconChevronDown v-if="!collapsed.has(project)" :size="16" />
-                    <IconChevronRight v-else :size="16" />
-                    <span class="fw-medium text-truncate" :title="project">{{ project }}</span>
+                    <ChevronDown v-if="!collapsed.has(project)" class="size-3.5" />
+                    <ChevronRight v-else class="size-3.5" />
+                    <span>{{ project }}</span>
+                    <Badge variant="outline" class="font-mono text-[10px] py-0 px-1 ml-1">
+                      {{ items.length }}
+                    </Badge>
                   </button>
-                </td>
-                <td class="text-secondary">-</td>
-                <td class="text-secondary">-</td>
-                <td class="text-secondary">-</td>
-                <td class="tnum">{{ groupStats(items) ? `${groupStats(items)!.cpu.toFixed(2)}%` : '-' }}</td>
-                <td class="tnum">{{ groupStats(items) ? `${bytes(groupStats(items)!.usage)} / ${bytes(groupStats(items)!.limit)}` : '-' }}</td>
-                <td class="tnum">{{ groupStats(items) ? `${groupStats(items)!.pct.toFixed(2)}%` : '-' }}</td>
-                <td class="text-secondary">-</td>
-                <td class="actions-col"></td>
-              </tr>
-              <tr v-for="c in (project && collapsed.has(project) ? [] : items)" :key="c.id" :aria-busy="busy === c.id">
-                <td class="pick">
+                </TableCell>
+                <TableCell class="text-right font-mono text-xs text-muted-foreground">
+                  {{ groupStats(items) ? `${groupStats(items)!.cpu.toFixed(1)}%` : '-' }}
+                </TableCell>
+                <TableCell class="text-right font-mono text-xs text-muted-foreground">
+                  {{ groupStats(items) ? bytes(groupStats(items)!.usage) : '-' }}
+                </TableCell>
+                <TableCell class="text-right" />
+              </TableRow>
+
+              <!-- Individual Container Row -->
+              <TableRow
+                v-for="c in (project && collapsed.has(project) ? [] : items)"
+                :key="c.id"
+                :class="{ 'bg-muted/20': selected.has(c.id) }"
+              >
+                <TableCell class="w-10">
                   <input
-                    class="form-check-input m-0"
                     type="checkbox"
-                    :aria-label="`Pilih ${c.name}`"
+                    class="rounded border-input text-primary focus:ring-ring size-3.5"
+                    :aria-label="`Select ${c.name}`"
                     :checked="selected.has(c.id)"
                     @change="pick(c.id, ($event.target as HTMLInputElement).checked)"
+                  />
+                </TableCell>
+                <TableCell class="w-8">
+                  <StateBadge dot :state="c.state" :label="c.status" />
+                </TableCell>
+                <TableCell>
+                  <RouterLink
+                    :to="`/containers/${c.id}`"
+                    class="font-medium text-foreground hover:underline text-xs block truncate max-w-[200px]"
+                    :class="{ 'pl-3': !!project }"
+                    :title="c.name"
                   >
-                </td>
-                <td class="dot" data-label="Status"><StateBadge dot :state="c.state" :label="c.status" /></td>
-                <td :class="{ child: !!project }">
-                  <RouterLink :to="`/containers/${c.id}`" class="d-block text-truncate" :title="c.name">{{ c.name }}</RouterLink>
-                </td>
-                <td data-label="Container ID">
-                  <span class="d-inline-flex align-items-center gap-1 min-w-0">
-                    <span class="font-monospace text-secondary text-truncate">{{ shortId(c.id) }}</span>
-                    <button type="button" class="btn btn-icon btn-sm copy" :aria-label="`Salin ID ${c.name}`" title="Salin ID" @click="copyId(c)">
-                      <IconCheck v-if="copied === c.id" :size="14" />
-                      <IconCopy v-else :size="14" />
+                    {{ c.name }}
+                  </RouterLink>
+                </TableCell>
+                <TableCell>
+                  <div class="flex items-center gap-1 font-mono text-xs text-muted-foreground">
+                    <span>{{ shortId(c.id) }}</span>
+                    <button
+                      type="button"
+                      class="text-muted-foreground hover:text-foreground cursor-pointer p-0.5"
+                      :title="`Copy ID ${c.name}`"
+                      @click="copyId(c)"
+                    >
+                      <Check v-if="copied === c.id" class="size-3 text-emerald-500" />
+                      <Copy v-else class="size-3" />
                     </button>
-                  </span>
-                </td>
-                <td data-label="Image" class="font-monospace text-truncate" :title="c.image">{{ c.image }}</td>
-                <td data-label="Port(s)"><PortLinks :ports="c.ports" /></td>
-                <td data-label="CPU (%)" class="tnum">{{ stats(c.id) ? `${stats(c.id)!.cpu_percent.toFixed(2)}%` : '-' }}</td>
-                <td data-label="Memory usage" class="tnum">{{ stats(c.id) ? `${bytes(stats(c.id)!.mem_usage)} / ${bytes(stats(c.id)!.mem_limit)}` : '-' }}</td>
-                <td data-label="Memory (%)" class="tnum">{{ stats(c.id) ? `${memPct(stats(c.id)!).toFixed(2)}%` : '-' }}</td>
-                <td data-label="Network I/O" class="tnum">{{ stats(c.id) ? `${bytes(stats(c.id)!.net_rx)} / ${bytes(stats(c.id)!.net_tx)}` : '-' }}</td>
-                <td class="actions-col">
-                  <div class="d-inline-flex gap-1">
-                    <button v-if="c.state === 'running'" class="btn btn-icon btn-sm" type="button" :disabled="busy === c.id" :aria-label="`Hentikan ${c.name}`" title="Hentikan" @click="act(c, 'stop')"><IconPlayerStop :size="16" /></button>
-                    <button v-else class="btn btn-icon btn-sm btn-primary" type="button" :disabled="busy === c.id" :aria-label="`Jalankan ${c.name}`" title="Jalankan" @click="act(c, 'start')"><IconPlayerPlay :size="16" /></button>
-                    <Dropdown :label="`Aksi lain untuk ${c.name}`" end class="btn btn-icon btn-sm" :disabled="busy === c.id">
-                      <template #toggle><IconDotsVertical :size="16" /></template>
-                      <button type="button" class="dropdown-item" role="menuitem" @click="act(c, 'restart')"><IconRefresh :size="18" class="icon dropdown-item-icon" />Restart</button>
-                      <RouterLink :to="`/containers/${c.id}?tab=logs`" class="dropdown-item" role="menuitem"><IconFileText :size="18" class="icon dropdown-item-icon" />Lihat log</RouterLink>
-                      <RouterLink v-if="c.state === 'running'" :to="`/containers/${c.id}?tab=terminal`" class="dropdown-item" role="menuitem"><IconTerminal2 :size="18" class="icon dropdown-item-icon" />Terminal</RouterLink>
-                    </Dropdown>
-                    <button class="btn btn-icon btn-sm btn-ghost-danger" type="button" :disabled="busy === c.id" :aria-label="`Hapus ${c.name}`" title="Hapus" @click="act(c, 'remove')"><IconTrash :size="16" /></button>
                   </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="text-secondary small text-end mt-2">Menampilkan {{ shown.length }} item</div>
-      </template>
+                </TableCell>
+                <TableCell>
+                  <span class="font-mono text-xs text-muted-foreground truncate block max-w-[180px]" :title="c.image">
+                    {{ c.image }}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <PortLinks :ports="c.ports" />
+                </TableCell>
+                <TableCell class="text-right font-mono text-xs">
+                  {{ stats(c.id) ? `${stats(c.id)!.cpu_percent.toFixed(1)}%` : '-' }}
+                </TableCell>
+                <TableCell class="text-right font-mono text-xs">
+                  {{ stats(c.id) ? bytes(stats(c.id)!.mem_usage) : '-' }}
+                </TableCell>
+                <TableCell class="text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <Button
+                      v-if="c.state === 'running'"
+                      variant="ghost"
+                      size="icon-sm"
+                      class="size-7"
+                      :disabled="busy === c.id"
+                      title="Stop container"
+                      @click="act(c, 'stop')"
+                    >
+                      <Square class="size-3 fill-current text-muted-foreground" />
+                    </Button>
+                    <Button
+                      v-else
+                      variant="ghost"
+                      size="icon-sm"
+                      class="size-7 text-emerald-600 hover:text-emerald-700"
+                      :disabled="busy === c.id"
+                      title="Start container"
+                      @click="act(c, 'start')"
+                    >
+                      <Play class="size-3 fill-current" />
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      class="size-7"
+                      :disabled="busy === c.id"
+                      title="Restart container"
+                      @click="act(c, 'restart')"
+                    >
+                      <RotateCcw class="size-3 text-muted-foreground" />
+                    </Button>
+
+                    <RouterLink :to="`/containers/${c.id}?tab=logs`">
+                      <Button variant="ghost" size="icon-sm" class="size-7" title="View Logs">
+                        <FileText class="size-3 text-muted-foreground" />
+                      </Button>
+                    </RouterLink>
+
+                    <RouterLink v-if="c.state === 'running'" :to="`/containers/${c.id}?tab=terminal`">
+                      <Button variant="ghost" size="icon-sm" class="size-7" title="Terminal Exec">
+                        <Terminal class="size-3 text-muted-foreground" />
+                      </Button>
+                    </RouterLink>
+
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      class="size-7 text-muted-foreground hover:text-destructive"
+                      :disabled="busy === c.id"
+                      title="Remove container"
+                      @click="act(c, 'remove')"
+                    >
+                      <Trash2 class="size-3" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </LoadState>
+      </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.search { flex-grow: 1; max-width: 320px; }
-@media (max-width: 575.98px) { .search { flex-basis: 100%; max-width: none; } }
-.usage { column-gap: 3rem; }
-.tnum { font-variant-numeric: tabular-nums; }
-.copy { border: 0; background: transparent; color: var(--tblr-secondary); padding: 0; width: 1.25rem; height: 1.25rem; }
-.group-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  max-width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-}
-
-@media (min-width: 768px) {
-  .containers { table-layout: fixed; }
-  .containers .pick { width: 2.25rem; }
-  .containers .dot { width: 1.75rem; }
-  .containers th:nth-child(3) { width: 14%; }
-  .containers th:nth-child(4) { width: 11%; }
-  .containers th:nth-child(5) { width: 13%; }
-  .containers th:nth-child(6) { width: 10%; }
-  .containers th:nth-child(7) { width: 7%; }
-  .containers th:nth-child(8) { width: 14%; }
-  .containers th:nth-child(9) { width: 8%; }
-  .containers th:nth-child(10) { width: 11%; }
-  .containers .actions-col { width: 7.5rem; border-left: var(--tblr-border-width) solid var(--tblr-border-color); }
-  .containers td.child { padding-left: 1.75rem; }
-}
-</style>

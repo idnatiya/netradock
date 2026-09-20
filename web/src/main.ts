@@ -1,5 +1,4 @@
 import { createApp } from 'vue'
-import '@tabler/core/dist/css/tabler.min.css'
 import '@fontsource/roboto/400.css'
 import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/700.css'

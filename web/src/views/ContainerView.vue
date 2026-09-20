@@ -1,12 +1,28 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { IconBox, IconCopy, IconPlayerPlay, IconPlayerStop, IconRefresh, IconTerminal2, IconTrash } from '@tabler/icons-vue'
+import {
+  Activity,
+  Boxes,
+  Check,
+  Code2,
+  Copy,
+  FileText,
+  Play,
+  RotateCcw,
+  Square,
+  Terminal,
+  Trash2,
+} from 'lucide-vue-next'
 import Sparkline from '@/components/Sparkline.vue'
 import { ago, bytes } from '@/format'
 import { useLiveStats } from '@/liveStats'
 import { api, notify } from '@/api'
 import { containerAction } from '@/actions'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import LoadState from '@/components/LoadState.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StateBadge from '@/components/StateBadge.vue'
@@ -28,26 +44,12 @@ const router = useRouter()
 const id = computed(() => route.params.id as string)
 const { data, error, loading, reload } = useLoad(() => api<Inspect>('GET', `/containers/${id.value}`), 5000)
 
-const tabs = [
-  { key: 'logs', label: 'Log' },
-  { key: 'stats', label: 'Statistik' },
-  { key: 'terminal', label: 'Terminal' },
-  { key: 'inspect', label: 'Inspect' },
-] as const
-type Tab = (typeof tabs)[number]['key']
-const tab = computed<Tab>(() => (tabs.some((t) => t.key === route.query.tab) ? (route.query.tab as Tab) : 'logs'))
-
-function select(t: Tab) {
-  router.replace({ query: { ...route.query, tab: t } })
-}
-function onTabKey(e: KeyboardEvent) {
-  const i = tabs.findIndex((t) => t.key === tab.value)
-  const next = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : null
-  if (next === null) return
-  const t = tabs[(next + tabs.length) % tabs.length]!
-  select(t.key)
-  document.getElementById(`tab-${t.key}`)?.focus()
-}
+const tabs = ['logs', 'stats', 'terminal', 'inspect'] as const
+type Tab = (typeof tabs)[number]
+const activeTab = computed<Tab>({
+  get: () => (tabs.includes(route.query.tab as Tab) ? (route.query.tab as Tab) : 'logs'),
+  set: (val: Tab) => router.replace({ query: { ...route.query, tab: val } }),
+})
 
 const name = computed(() => data.value?.Name.replace(/^\//, '') ?? '')
 const state = computed(() => data.value?.State.Status ?? '')
@@ -69,12 +71,12 @@ async function act(action: 'start' | 'stop' | 'restart' | 'remove') {
   }
 }
 
-// Logs: remount the terminal to restart the stream with a new tail size.
+// Logs: remount terminal to restart stream with new tail size
 const tail = ref('200')
 const logKey = ref(0)
 const logEnded = ref('')
 
-// Exec: connect on demand, never automatically.
+// Exec: connect on demand
 const shell = ref('/bin/sh')
 const execOn = ref(false)
 const execEnded = ref('')
@@ -83,162 +85,319 @@ function connect() {
   execOn.value = true
 }
 
+const copied = ref(false)
 async function copyInspect() {
   try {
     await navigator.clipboard.writeText(JSON.stringify(data.value, null, 2))
-    notify('ok', 'JSON inspect disalin.')
+    copied.value = true
+    setTimeout(() => (copied.value = false), 1500)
+    notify('ok', 'Inspect JSON copied to clipboard.')
   } catch {
-    notify('error', 'Clipboard tidak tersedia. Pilih teks lalu salin manual.')
+    notify('error', 'Clipboard denied. Please select text manually.')
   }
 }
 </script>
 
 <template>
-  <PageHeader pretitle="Container" :title="name || id.slice(0, 12)">
-    <template #avatar>
-      <span class="avatar avatar-lg" :class="running ? 'bg-green-lt' : 'bg-red-lt'"><IconBox :size="28" /></span>
-    </template>
-    <template #meta>
-      <div v-if="data" class="d-flex flex-wrap align-items-center gap-2 mt-2 text-secondary">
-        <StateBadge :state="state" :label="state === 'exited' ? `exited, kode ${data.State.ExitCode}` : state" />
-        <span v-if="data.State.Health" class="badge bg-secondary-lt">health: {{ data.State.Health.Status }}</span>
-        <span v-if="data.RestartCount" class="badge bg-yellow-lt">restart {{ data.RestartCount }}x</span>
-        <span class="font-monospace text-break-all">{{ data.Config.Image }}</span>
-      </div>
-    </template>
-    <template v-if="data" #actions>
-      <div class="btn-list">
-        <button v-if="running" class="btn" type="button" :disabled="busy" @click="act('stop')"><IconPlayerStop :size="18" class="icon" />Hentikan</button>
-        <button v-else class="btn btn-primary" type="button" :disabled="busy" @click="act('start')"><IconPlayerPlay :size="18" class="icon" />Jalankan</button>
-        <button class="btn" type="button" :disabled="busy" @click="act('restart')"><IconRefresh :size="18" class="icon" />Restart</button>
-        <button class="btn btn-ghost-danger" type="button" :disabled="busy" @click="act('remove')"><IconTrash :size="18" class="icon" />Hapus</button>
-      </div>
-    </template>
-  </PageHeader>
+  <div>
+    <!-- Page Header -->
+    <PageHeader pretitle="Container" :title="name || id.slice(0, 12)">
+      <template #meta>
+        <div v-if="data" class="flex flex-wrap items-center gap-2 mt-1">
+          <StateBadge :state="state" :label="state === 'exited' ? `exited (${data.State.ExitCode})` : state" />
+          <Badge v-if="data.State.Health" variant="secondary" class="font-mono text-xs">
+            health: {{ data.State.Health.Status }}
+          </Badge>
+          <Badge v-if="data.RestartCount" variant="warning" class="font-mono text-xs">
+            restart {{ data.RestartCount }}x
+          </Badge>
+          <span class="font-mono text-xs text-muted-foreground break-all">
+            {{ data.Config.Image }}
+          </span>
+        </div>
+      </template>
 
-  <div class="page-body">
-    <div class="container-xl">
-      <div v-if="loading || !data" class="card">
+      <template v-if="data" #actions>
+        <div class="flex items-center gap-1.5">
+          <Button
+            v-if="running"
+            variant="outline"
+            size="sm"
+            class="h-8 text-xs gap-1.5"
+            :disabled="busy"
+            @click="act('stop')"
+          >
+            <Square class="size-3 fill-current text-muted-foreground" />
+            <span>Stop</span>
+          </Button>
+          <Button
+            v-else
+            size="sm"
+            class="h-8 text-xs gap-1.5"
+            :disabled="busy"
+            @click="act('start')"
+          >
+            <Play class="size-3 fill-current" />
+            <span>Start</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            class="h-8 text-xs gap-1.5"
+            :disabled="busy"
+            @click="act('restart')"
+          >
+            <RotateCcw class="size-3" />
+            <span>Restart</span>
+          </Button>
+
+          <Button
+            variant="destructive"
+            size="sm"
+            class="h-8 text-xs gap-1.5"
+            :disabled="busy"
+            @click="act('remove')"
+          >
+            <Trash2 class="size-3" />
+            <span>Remove</span>
+          </Button>
+        </div>
+      </template>
+    </PageHeader>
+
+    <div class="p-6 max-w-7xl mx-auto space-y-6">
+      <div v-if="loading || !data">
         <LoadState :loading="loading" :error="error" :empty="!data" what="container" @retry="reload">
           <template #empty>
-            <p class="empty-title">Container tidak ditemukan</p>
-            <div class="empty-action"><RouterLink to="/containers" class="btn">Kembali ke daftar container</RouterLink></div>
+            <div class="p-12 text-center space-y-3">
+              <h3 class="text-base font-semibold">Container Not Found</h3>
+              <RouterLink to="/containers">
+                <Button variant="outline" size="sm">Back to containers</Button>
+              </RouterLink>
+            </div>
           </template>
         </LoadState>
       </div>
 
-      <div v-if="data" class="row row-cards mb-3">
-        <div class="col-6 col-lg-3">
-          <div class="card card-sm"><div class="card-body">
-            <div class="subheader">CPU</div>
-            <div class="h2 mb-1">{{ now ? `${now.cpu_percent.toFixed(1)}%` : '-' }}</div>
-            <Sparkline :values="live.history[data.Id]?.cpu ?? []" :height="24" :floor="5" />
-          </div></div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="card card-sm"><div class="card-body">
-            <div class="subheader">Memori</div>
-            <div class="h2 mb-1">{{ now ? bytes(now.mem_usage) : '-' }}</div>
-            <Sparkline :values="live.history[data.Id]?.mem ?? []" :height="24" :floor="16 * 1024 * 1024" />
-          </div></div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="card card-sm"><div class="card-body">
-            <div class="subheader">Berjalan sejak</div>
-            <div class="h2 mb-1">{{ startedAt ? ago(startedAt) : 'tidak berjalan' }}</div>
-            <div class="text-secondary small">dibuat {{ ago(Date.parse(data.Created) / 1000) }}</div>
-          </div></div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="card card-sm"><div class="card-body">
-            <div class="subheader">Restart</div>
-            <div class="h2 mb-1">{{ data.RestartCount }}x</div>
-            <div class="text-secondary small">kode keluar terakhir {{ data.State.ExitCode }}</div>
-          </div></div>
-        </div>
-      </div>
+      <template v-if="data">
+        <!-- 4 Stat Summary Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader class="pb-1 p-4">
+              <CardTitle class="text-xs uppercase tracking-wider text-muted-foreground font-mono">CPU</CardTitle>
+            </CardHeader>
+            <CardContent class="p-4 pt-0 space-y-1">
+              <div class="text-xl font-bold font-mono text-foreground">
+                {{ now ? `${now.cpu_percent.toFixed(1)}%` : '-' }}
+              </div>
+              <div class="h-6 w-full overflow-hidden">
+                <Sparkline :values="live.history[data.Id]?.cpu ?? []" :height="24" :floor="5" />
+              </div>
+            </CardContent>
+          </Card>
 
-      <div v-if="data" class="card">
-        <div v-if="error" class="alert alert-warning m-3" role="alert">Data mungkin sudah lama: {{ error }}</div>
-        <div class="card-header">
-          <ul class="nav nav-tabs card-header-tabs flex-nowrap overflow-auto" role="tablist" aria-label="Detail container" @keydown="onTabKey">
-            <li v-for="t in tabs" :key="t.key" class="nav-item" role="presentation">
-              <button
-                :id="`tab-${t.key}`"
-                class="nav-link"
-                :class="{ active: tab === t.key }"
-                role="tab"
-                type="button"
-                :aria-selected="tab === t.key"
-                :aria-controls="`panel-${t.key}`"
-                :tabindex="tab === t.key ? 0 : -1"
-                @click="select(t.key)"
-              >{{ t.label }}</button>
-            </li>
-          </ul>
-        </div>
+          <Card>
+            <CardHeader class="pb-1 p-4">
+              <CardTitle class="text-xs uppercase tracking-wider text-muted-foreground font-mono">Memory</CardTitle>
+            </CardHeader>
+            <CardContent class="p-4 pt-0 space-y-1">
+              <div class="text-xl font-bold font-mono text-foreground">
+                {{ now ? bytes(now.mem_usage) : '-' }}
+              </div>
+              <div class="h-6 w-full overflow-hidden">
+                <Sparkline :values="live.history[data.Id]?.mem ?? []" :height="24" :floor="16 * 1024 * 1024" color="#0ea5e9" />
+              </div>
+            </CardContent>
+          </Card>
 
-        <div v-if="tab === 'logs'" id="panel-logs" class="card-body" role="tabpanel" aria-labelledby="tab-logs">
-          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-            <label class="d-flex align-items-center gap-2 mb-0" for="tail">Baris awal</label>
-            <select id="tail" v-model="tail" class="form-select w-auto" @change="logKey++">
-              <option value="100">100</option>
-              <option value="200">200</option>
-              <option value="1000">1000</option>
-              <option value="5000">5000</option>
-            </select>
-            <button class="btn" type="button" @click="logEnded = ''; logKey++"><IconRefresh :size="18" class="icon" />Muat ulang log</button>
-          </div>
-          <XTerm :key="`${id}-${logKey}`" :path="`/containers/${id}/logs?tail=${tail}`" label="Log container" @closed="(r) => (logEnded = r || 'Stream log selesai.')" />
-          <div v-if="logEnded" class="text-secondary mt-2" role="status">{{ logEnded }}</div>
+          <Card>
+            <CardHeader class="pb-1 p-4">
+              <CardTitle class="text-xs uppercase tracking-wider text-muted-foreground font-mono">Uptime</CardTitle>
+            </CardHeader>
+            <CardContent class="p-4 pt-0">
+              <div class="text-xl font-bold font-mono text-foreground">
+                {{ startedAt ? ago(startedAt) : 'Inactive' }}
+              </div>
+              <p class="text-[11px] text-muted-foreground font-mono mt-0.5">
+                created {{ ago(Date.parse(data.Created) / 1000) }}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader class="pb-1 p-4">
+              <CardTitle class="text-xs uppercase tracking-wider text-muted-foreground font-mono">Restarts</CardTitle>
+            </CardHeader>
+            <CardContent class="p-4 pt-0">
+              <div class="text-xl font-bold font-mono text-foreground">
+                {{ data.RestartCount }}x
+              </div>
+              <p class="text-[11px] text-muted-foreground font-mono mt-0.5">
+                last exit code {{ data.State.ExitCode }}
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
-        <div v-else-if="tab === 'stats'" id="panel-stats" class="card-body" role="tabpanel" aria-labelledby="tab-stats">
-          <StatsPanel v-if="running" :key="id" :id="id" />
-          <div v-else class="empty">
-            <p class="empty-title">Container tidak berjalan</p>
-            <p class="empty-subtitle text-secondary">Statistik hanya tersedia saat container berjalan.</p>
-            <div class="empty-action"><button class="btn btn-primary" type="button" :disabled="busy" @click="act('start')"><IconPlayerPlay :size="18" class="icon" />Jalankan</button></div>
-          </div>
-        </div>
-
-        <div v-else-if="tab === 'terminal'" id="panel-terminal" class="card-body" role="tabpanel" aria-labelledby="tab-terminal">
-          <div v-if="!running" class="empty">
-            <p class="empty-title">Container tidak berjalan</p>
-            <p class="empty-subtitle text-secondary">Jalankan container dulu untuk membuka shell.</p>
-            <div class="empty-action"><button class="btn btn-primary" type="button" :disabled="busy" @click="act('start')"><IconPlayerPlay :size="18" class="icon" />Jalankan</button></div>
-          </div>
-          <template v-else>
-            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-              <label class="mb-0" for="shell">Shell</label>
-              <select id="shell" v-model="shell" class="form-select w-auto" :disabled="execOn">
-                <option>/bin/sh</option>
-                <option>/bin/bash</option>
-                <option>/bin/ash</option>
-              </select>
-              <button v-if="!execOn" class="btn btn-primary" type="button" @click="connect"><IconTerminal2 :size="18" class="icon" />Buka shell</button>
-              <button v-else class="btn" type="button" @click="execOn = false">Putuskan</button>
+        <!-- Tabbed Container Workspace -->
+        <Card class="overflow-hidden">
+          <Tabs v-model="activeTab" class="w-full">
+            <div class="border-b border-border px-5 pt-3 bg-muted/20">
+              <TabsList class="h-9 bg-muted/60">
+                <TabsTrigger value="logs" class="gap-1.5 text-xs">
+                  <FileText class="size-3.5" />
+                  <span>Logs</span>
+                </TabsTrigger>
+                <TabsTrigger value="stats" class="gap-1.5 text-xs">
+                  <Activity class="size-3.5" />
+                  <span>Stats</span>
+                </TabsTrigger>
+                <TabsTrigger value="terminal" class="gap-1.5 text-xs">
+                  <Terminal class="size-3.5" />
+                  <span>Terminal</span>
+                </TabsTrigger>
+                <TabsTrigger value="inspect" class="gap-1.5 text-xs">
+                  <Code2 class="size-3.5" />
+                  <span>Inspect</span>
+                </TabsTrigger>
+              </TabsList>
             </div>
-            <XTerm
-              v-if="execOn"
-              :key="`${id}-${shell}`"
-              :path="`/containers/${id}/exec?cmd=${encodeURIComponent(shell)}`"
-              interactive
-              label="Terminal container"
-              @closed="(r) => { execOn = false; execEnded = r || 'Shell ditutup.' }"
-            />
-            <div v-if="execEnded" class="text-secondary" role="status">{{ execEnded }}</div>
-            <div v-if="!execOn && !execEnded" class="alert alert-warning mb-0">
-              Perintah berjalan di dalam container dengan user default image, tanpa batasan perintah.
-            </div>
-          </template>
-        </div>
 
-        <div v-else id="panel-inspect" class="card-body" role="tabpanel" aria-labelledby="tab-inspect">
-          <div class="mb-3"><button class="btn" type="button" @click="copyInspect"><IconCopy :size="18" class="icon" />Salin JSON</button></div>
-          <pre class="json-view" tabindex="0">{{ JSON.stringify(data, null, 2) }}</pre>
-        </div>
-      </div>
+            <!-- Tab 1: Logs -->
+            <TabsContent value="logs" class="p-5 mt-0 space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="text-muted-foreground">Tail lines:</span>
+                  <select
+                    id="tail"
+                    v-model="tail"
+                    class="h-8 rounded-md border border-input bg-background px-2 text-xs font-mono"
+                    @change="logKey++"
+                  >
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="1000">1000</option>
+                    <option value="5000">5000</option>
+                  </select>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="h-8 text-xs gap-1.5"
+                  @click="logEnded = ''; logKey++"
+                >
+                  <RotateCcw class="size-3" />
+                  <span>Reload logs</span>
+                </Button>
+              </div>
+
+              <div class="rounded-lg border border-border overflow-hidden bg-[#181d26]">
+                <XTerm
+                  :key="`${id}-${logKey}`"
+                  :path="`/containers/${id}/logs?tail=${tail}`"
+                  label="Container log stream"
+                  @closed="(r) => (logEnded = r || 'Log stream closed.')"
+                />
+              </div>
+              <div v-if="logEnded" class="text-xs text-muted-foreground font-mono" role="status">
+                {{ logEnded }}
+              </div>
+            </TabsContent>
+
+            <!-- Tab 2: Stats -->
+            <TabsContent value="stats" class="p-5 mt-0">
+              <StatsPanel v-if="running" :key="id" :id="id" />
+              <div v-else class="p-12 text-center space-y-3">
+                <h4 class="text-sm font-semibold">Container Not Running</h4>
+                <p class="text-xs text-muted-foreground">Real-time statistics are available only while the container is active.</p>
+                <Button size="sm" class="gap-1.5" :disabled="busy" @click="act('start')">
+                  <Play class="size-3 fill-current" />
+                  <span>Start Container</span>
+                </Button>
+              </div>
+            </TabsContent>
+
+            <!-- Tab 3: Terminal Exec -->
+            <TabsContent value="terminal" class="p-5 mt-0 space-y-4">
+              <div v-if="!running" class="p-12 text-center space-y-3">
+                <h4 class="text-sm font-semibold">Container Not Running</h4>
+                <p class="text-xs text-muted-foreground">Start the container to attach an interactive terminal session.</p>
+                <Button size="sm" class="gap-1.5" :disabled="busy" @click="act('start')">
+                  <Play class="size-3 fill-current" />
+                  <span>Start Container</span>
+                </Button>
+              </div>
+              <template v-else>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div class="flex items-center gap-2 text-xs">
+                    <span class="text-muted-foreground">Shell binary:</span>
+                    <select
+                      id="shell"
+                      v-model="shell"
+                      class="h-8 rounded-md border border-input bg-background px-2 text-xs font-mono"
+                      :disabled="execOn"
+                    >
+                      <option>/bin/sh</option>
+                      <option>/bin/bash</option>
+                      <option>/bin/ash</option>
+                    </select>
+                  </div>
+                  <Button
+                    v-if="!execOn"
+                    size="sm"
+                    class="h-8 text-xs gap-1.5"
+                    @click="connect"
+                  >
+                    <Terminal class="size-3.5" />
+                    <span>Connect Shell</span>
+                  </Button>
+                  <Button
+                    v-else
+                    variant="destructive"
+                    size="sm"
+                    class="h-8 text-xs"
+                    @click="execOn = false"
+                  >
+                    Disconnect
+                  </Button>
+                </div>
+
+                <div v-if="execOn" class="rounded-lg border border-border overflow-hidden bg-[#181d26]">
+                  <XTerm
+                    :key="`${id}-${shell}`"
+                    :path="`/containers/${id}/exec?cmd=${encodeURIComponent(shell)}`"
+                    interactive
+                    label="Container interactive terminal"
+                    @closed="(r) => { execOn = false; execEnded = r || 'Terminal session disconnected.' }"
+                  />
+                </div>
+
+                <div v-if="execEnded" class="text-xs text-muted-foreground font-mono" role="status">
+                  {{ execEnded }}
+                </div>
+
+                <div v-if="!execOn && !execEnded" class="p-3 rounded-lg border border-border bg-muted/20 text-xs text-muted-foreground">
+                  Commands execute directly within the target container process namespace with root/container privileges.
+                </div>
+              </template>
+            </TabsContent>
+
+            <!-- Tab 4: Inspect JSON -->
+            <TabsContent value="inspect" class="p-5 mt-0 space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-muted-foreground">Raw Docker Engine inspect object</span>
+                <Button variant="outline" size="sm" class="h-8 text-xs gap-1.5" @click="copyInspect">
+                  <Check v-if="copied" class="size-3.5 text-emerald-500" />
+                  <Copy v-else class="size-3.5" />
+                  <span>{{ copied ? 'Copied' : 'Copy JSON' }}</span>
+                </Button>
+              </div>
+              <pre class="p-4 rounded-lg border border-border bg-muted/40 font-mono text-xs text-foreground overflow-auto max-h-[60vh] select-text">{{ JSON.stringify(data, null, 2) }}</pre>
+            </TabsContent>
+          </Tabs>
+        </Card>
+      </template>
     </div>
   </div>
 </template>

@@ -2,6 +2,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { wsURL, type Stats } from '@/api'
 import { bytes } from '@/format'
+import { Card, CardContent } from '@/components/ui/card'
 import LineChart from '@/components/LineChart.vue'
 
 const props = defineProps<{ id: string }>()
@@ -10,7 +11,7 @@ const CAPACITY = 60
 const cpu = ref<number[]>([])
 const mem = ref<number[]>([])
 const last = ref<Stats>()
-const status = ref('Menghubungkan...')
+const status = ref('Connecting...')
 let ws: WebSocket | undefined
 let prevNet: { rx: number; tx: number } | undefined
 const rate = ref({ rx: 0, tx: 0 })
@@ -31,7 +32,7 @@ onMounted(() => {
     last.value = s
     status.value = ''
   }
-  ws.onclose = (e) => (status.value = e.reason ? `Stream berhenti: ${e.reason}` : 'Stream berhenti. Container mungkin sudah tidak berjalan.')
+  ws.onclose = (e) => (status.value = e.reason ? `Stream closed: ${e.reason}` : 'Stream stopped. Container may have terminated.')
 })
 onUnmounted(() => ws?.close())
 
@@ -39,21 +40,44 @@ const pct = (v: number) => `${v.toFixed(1)}%`
 </script>
 
 <template>
-  <div>
-    <div v-if="status" class="text-secondary mb-3" role="status">{{ status }}</div>
-    <div class="row row-cards">
-      <div class="col-md-6">
-        <div class="card"><div class="card-body"><LineChart title="CPU" :values="cpu" :capacity="CAPACITY" :format="pct" :floor="5" /></div></div>
-      </div>
-      <div class="col-md-6">
-        <div class="card"><div class="card-body"><LineChart title="Memori" :values="mem" :capacity="CAPACITY" :format="bytes" :floor="16 * 1024 * 1024" /></div></div>
-      </div>
+  <div class="space-y-4">
+    <div v-if="status" class="text-xs font-mono text-muted-foreground" role="status">
+      {{ status }}
     </div>
-    <div v-if="last" class="datagrid mt-4">
-      <div class="datagrid-item"><div class="datagrid-title">Batas memori</div><div class="datagrid-content">{{ bytes(last.mem_limit) }}</div></div>
-      <div class="datagrid-item"><div class="datagrid-title">Memori terpakai</div><div class="datagrid-content">{{ ((last.mem_usage / last.mem_limit) * 100).toFixed(1) }}% dari batas</div></div>
-      <div class="datagrid-item"><div class="datagrid-title">Jaringan masuk</div><div class="datagrid-content">{{ bytes(rate.rx) }}/dtk · total {{ bytes(last.net_rx) }}</div></div>
-      <div class="datagrid-item"><div class="datagrid-title">Jaringan keluar</div><div class="datagrid-content">{{ bytes(rate.tx) }}/dtk · total {{ bytes(last.net_tx) }}</div></div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Card class="p-4 bg-card/50">
+        <LineChart title="CPU" :values="cpu" :capacity="CAPACITY" :format="pct" :floor="5" color="#10b981" />
+      </Card>
+      <Card class="p-4 bg-card/50">
+        <LineChart title="Memory" :values="mem" :capacity="CAPACITY" :format="bytes" :floor="16 * 1024 * 1024" color="#0ea5e9" />
+      </Card>
+    </div>
+
+    <div v-if="last" class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+      <Card class="p-3">
+        <div class="text-[11px] font-mono text-muted-foreground uppercase">Memory Limit</div>
+        <div class="text-base font-bold font-mono text-foreground mt-0.5">{{ bytes(last.mem_limit) }}</div>
+      </Card>
+
+      <Card class="p-3">
+        <div class="text-[11px] font-mono text-muted-foreground uppercase">Memory Used</div>
+        <div class="text-base font-bold font-mono text-foreground mt-0.5">
+          {{ ((last.mem_usage / last.mem_limit) * 100).toFixed(1) }}%
+        </div>
+      </Card>
+
+      <Card class="p-3">
+        <div class="text-[11px] font-mono text-muted-foreground uppercase">Network RX</div>
+        <div class="text-base font-bold font-mono text-foreground mt-0.5">{{ bytes(rate.rx) }}/s</div>
+        <div class="text-[10px] text-muted-foreground font-mono mt-0.5">total {{ bytes(last.net_rx) }}</div>
+      </Card>
+
+      <Card class="p-3">
+        <div class="text-[11px] font-mono text-muted-foreground uppercase">Network TX</div>
+        <div class="text-base font-bold font-mono text-foreground mt-0.5">{{ bytes(rate.tx) }}/s</div>
+        <div class="text-[10px] text-muted-foreground font-mono mt-0.5">total {{ bytes(last.net_tx) }}</div>
+      </Card>
     </div>
   </div>
 </template>

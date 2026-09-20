@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { AlertCircle, Loader2 } from 'lucide-vue-next'
 import { api, currentUser } from '@/api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import BrandLogo from '@/components/BrandLogo.vue'
 
 const route = useRoute()
@@ -21,9 +25,9 @@ async function submit() {
     router.replace(next)
   } catch (e) {
     error.value = (e as Error).message === 'Too Many Requests'
-      ? 'Terlalu banyak percobaan. Tunggu satu menit lalu coba lagi.'
+      ? 'Too many attempts. Wait a minute and try again.'
       : (e as Error).message === 'invalid username or password'
-        ? 'Username atau password salah.'
+        ? 'Invalid username or password.'
         : (e as Error).message
   } finally {
     busy.value = false
@@ -32,35 +36,64 @@ async function submit() {
 </script>
 
 <template>
-  <div class="page page-center">
-    <div class="container container-tight py-4">
-      <div class="text-center mb-4">
-        <BrandLogo class="fs-2" />
+  <div class="min-h-dvh flex flex-col items-center justify-center p-4 bg-background text-foreground">
+    <div class="w-full max-w-sm space-y-6">
+      <div class="flex justify-center">
+        <BrandLogo />
       </div>
-      <div class="card card-md">
-        <div class="card-body">
-          <h2 class="h2 text-center mb-4">Masuk untuk mengelola Docker</h2>
-          <form autocomplete="on" :aria-busy="busy" @submit.prevent="submit">
-            <div class="mb-3">
-              <label class="form-label" for="username">Username</label>
-              <input id="username" v-model="username" type="text" class="form-control" autocomplete="username" required autofocus>
+
+      <Card class="shadow-sm border-border">
+        <CardHeader class="space-y-1 text-center pb-4">
+          <CardTitle class="text-xl font-bold">Sign In</CardTitle>
+          <CardDescription class="text-xs">
+            Authenticate to manage Docker containers
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <form class="space-y-4" autocomplete="on" :aria-busy="busy" @submit.prevent="submit">
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-foreground" for="username">Username</label>
+              <Input
+                id="username"
+                v-model="username"
+                type="text"
+                autocomplete="username"
+                required
+                autofocus
+                placeholder="admin"
+                class="h-9 text-xs"
+              />
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="password">Password</label>
-              <input id="password" v-model="password" type="password" class="form-control" autocomplete="current-password" required>
+
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-foreground" for="password">Password</label>
+              <Input
+                id="password"
+                v-model="password"
+                type="password"
+                autocomplete="current-password"
+                required
+                placeholder="••••••••"
+                class="h-9 text-xs"
+              />
             </div>
-            <div v-if="error" class="alert alert-danger" role="alert">{{ error }}</div>
-            <div class="form-footer">
-              <button type="submit" class="btn btn-primary w-100" :disabled="busy">
-                <span v-if="busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-                {{ busy ? 'Memeriksa...' : 'Masuk' }}
-              </button>
+
+            <div v-if="error" class="flex items-center gap-2 p-2.5 rounded-md border border-destructive/20 bg-destructive/10 text-xs text-destructive">
+              <AlertCircle class="size-4 shrink-0" />
+              <span>{{ error }}</span>
             </div>
+
+            <Button type="submit" class="w-full h-9 text-xs gap-2 font-medium" :disabled="busy">
+              <Loader2 v-if="busy" class="size-3.5 animate-spin" />
+              <span>{{ busy ? 'Authenticating...' : 'Sign In' }}</span>
+            </Button>
           </form>
-        </div>
-      </div>
-      <div class="text-center text-secondary mt-3">
-        Akun diatur lewat <code>NETRADOCK_USERNAME</code> dan <code>NETRADOCK_PASSWORD</code>.
+        </CardContent>
+      </Card>
+
+      <div class="text-center text-[11px] font-mono text-muted-foreground">
+        Configured via <code class="px-1 py-0.5 rounded bg-muted">NETRADOCK_USERNAME</code> & <code class="px-1 py-0.5 rounded bg-muted">NETRADOCK_PASSWORD</code>
       </div>
     </div>
   </div>

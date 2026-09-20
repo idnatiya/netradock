@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { IconBrandDocker } from '@tabler/icons-vue'
+import { Activity, Cpu, HardDrive, Server } from 'lucide-vue-next'
 import type { System } from '@/api'
 import { bytes } from '@/format'
 import { useLiveStats } from '@/liveStats'
@@ -15,31 +15,40 @@ const mem = computed(() => live.total.mem.at(-1) ?? 0)
 </script>
 
 <template>
-  <footer class="statusbar d-flex align-items-center gap-2 px-3 small text-secondary">
-    <IconBrandDocker :size="16" class="flex-shrink-0" :class="up ? 'text-primary' : 'text-danger'" />
-    <span class="status" :class="up ? 'status-green' : 'status-red'">
-      <span class="status-dot"></span>{{ up ? 'Engine berjalan' : 'Engine tidak terjangkau' }}
-    </span>
-    <template v-if="sys">
-      <span class="sep d-none d-md-inline">·</span>
-      <span class="d-none d-md-inline tnum">CPU {{ cpu.toFixed(1) }}%</span>
-      <span class="sep d-none d-md-inline">·</span>
-      <span class="d-none d-md-inline tnum">RAM {{ bytes(mem) }} / {{ bytes(sys.mem_total) }}</span>
-      <span class="ms-auto text-truncate d-none d-lg-inline" :title="sys.name">{{ sys.name }}</span>
-      <span class="sep d-none d-lg-inline">·</span>
-      <span class="d-none d-sm-inline ms-auto ms-lg-0">v{{ sys.server_version }}</span>
-    </template>
+  <footer class="h-8 shrink-0 flex items-center justify-between border-t border-border bg-card/60 px-4 text-xs text-muted-foreground font-mono backdrop-blur-xs select-none">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5">
+        <span
+          class="size-2 rounded-full"
+          :class="up ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500'"
+        />
+        <span :class="up ? 'text-foreground font-medium' : 'text-rose-500'">
+          {{ up ? 'Engine Connected' : 'Engine Offline' }}
+        </span>
+      </div>
+
+      <template v-if="sys">
+        <span class="text-border">|</span>
+        <div class="hidden md:flex items-center gap-1.5">
+          <Cpu class="size-3.5 text-muted-foreground" />
+          <span>CPU {{ cpu.toFixed(1) }}%</span>
+        </div>
+
+        <span class="hidden md:inline text-border">|</span>
+        <div class="hidden md:flex items-center gap-1.5">
+          <Activity class="size-3.5 text-muted-foreground" />
+          <span>RAM {{ bytes(mem) }} / {{ bytes(sys.mem_total) }}</span>
+        </div>
+      </template>
+    </div>
+
+    <div v-if="sys" class="flex items-center gap-3">
+      <div class="hidden lg:flex items-center gap-1.5 text-muted-foreground truncate" :title="sys.name">
+        <Server class="size-3.5" />
+        <span class="truncate max-w-[200px]">{{ sys.name }}</span>
+      </div>
+      <span class="hidden lg:inline text-border">|</span>
+      <span class="text-muted-foreground">Docker v{{ sys.server_version }}</span>
+    </div>
   </footer>
 </template>
-
-<style scoped>
-.statusbar {
-  height: var(--statusbar-height);
-  font-size: 12px;
-  background: var(--statusbar-bg);
-  border-top: var(--tblr-border-width) solid var(--nav-border);
-}
-.status { height: auto; padding: 0; background: transparent; font-size: inherit; color: inherit; }
-.sep { opacity: 0.4; }
-.tnum { font-variant-numeric: tabular-nums; }
-</style>

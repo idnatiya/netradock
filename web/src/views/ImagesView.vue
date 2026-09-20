@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { Download, Layers, Loader2, Trash2 } from 'lucide-vue-next'
 import { api, notify, type Image } from '@/api'
 import { removeResource } from '@/actions'
 import { ago, bytes, shortId } from '@/format'
-import { IconDownload, IconStack2, IconTrash } from '@tabler/icons-vue'
+import { useLoad } from '@/useLoad'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import LoadState from '@/components/LoadState.vue'
 import PageHeader from '@/components/PageHeader.vue'
-import { useLoad } from '@/useLoad'
 
 const { data, error, loading, reload } = useLoad(() => api<Image[]>('GET', '/images'))
 const sorted = computed(() => [...(data.value ?? [])].sort((a, b) => b.created - a.created))
@@ -21,11 +26,11 @@ async function pull() {
   pulling.value = true
   try {
     await api('POST', '/images/pull', { image: ref_.value.trim() })
-    notify('ok', `${ref_.value.trim()} selesai di-pull.`)
+    notify('ok', `${ref_.value.trim()} successfully pulled.`)
     ref_.value = ''
     await reload()
   } catch (e) {
-    notify('error', `Pull gagal: ${(e as Error).message}`)
+    notify('error', `Pull failed: ${(e as Error).message}`)
   } finally {
     pulling.value = false
   }
@@ -34,82 +39,154 @@ async function pull() {
 async function remove(i: Image) {
   const label = i.tags[0] ?? shortId(i.id)
   const body = i.containers > 0
-    ? `Dipakai ${i.containers} container. Docker akan menolak kecuali container itu dihapus dulu.`
-    : 'Image bisa di-pull ulang kapan saja.'
+    ? `In use by ${i.containers} container(s). Docker will reject removal unless containers are stopped and deleted first.`
+    : 'Image can be pulled again at any time.'
   if (await removeResource('Image', label, `/images/${encodeURIComponent(i.id)}`, body)) await reload()
 }
 </script>
 
 <template>
-  <PageHeader title="Images">
-    <template #meta>
-      <div v-if="data" class="text-secondary mt-1">{{ data.length }} image, total {{ bytes(totalSize) }}</div>
-    </template>
-    <template #actions>
-      <form class="input-group pull" @submit.prevent="pull">
-        <input v-model="ref_" type="text" class="form-control" placeholder="nginx:alpine" aria-label="Nama image yang mau di-pull" required :disabled="pulling" autocomplete="off" spellcheck="false">
-        <button class="btn btn-primary" type="submit" :disabled="pulling || !ref_.trim()">
-          <span v-if="pulling" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-          <IconDownload v-else :size="18" class="icon" />
-          {{ pulling ? 'Menarik...' : 'Pull image' }}
-        </button>
-      </form>
-    </template>
-  </PageHeader>
+  <div>
+    <!-- Page Header -->
+    <PageHeader title="Images">
+      <template #meta>
+        <span v-if="data" class="font-mono text-xs text-muted-foreground">
+          {{ data.length }} images, total {{ bytes(totalSize) }}
+        </span>
+      </template>
+      <template #actions>
+        <form class="flex items-center gap-2 w-full sm:w-auto" @submit.prevent="pull">
+          <Input
+            v-model="ref_"
+            type="text"
+            placeholder="e.g. nginx:alpine or redis:latest"
+            class="h-8.5 w-full sm:w-64 text-xs font-mono"
+            required
+            :disabled="pulling"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <Button type="submit" size="sm" class="h-8.5 text-xs gap-1.5 shrink-0" :disabled="pulling || !ref_.trim()">
+            <Loader2 v-if="pulling" class="size-3.5 animate-spin" />
+            <Download v-else class="size-3.5" />
+            <span>{{ pulling ? 'Pulling...' : 'Pull image' }}</span>
+          </Button>
+        </form>
+      </template>
+    </PageHeader>
 
-  <div class="page-body">
-    <div class="container-xl">
-      <div v-if="data" class="row row-cards mb-3">
-        <div class="col-6 col-lg-3"><div class="card card-sm"><div class="card-body">
-          <div class="subheader">Total image</div><div class="h2 mb-0">{{ data.length }}</div>
-        </div></div></div>
-        <div class="col-6 col-lg-3"><div class="card card-sm"><div class="card-body">
-          <div class="subheader">Ukuran di disk</div><div class="h2 mb-0">{{ bytes(totalSize) }}</div>
-        </div></div></div>
-        <div class="col-6 col-lg-3"><div class="card card-sm"><div class="card-body">
-          <div class="subheader">Tidak dipakai</div><div class="h2 mb-0">{{ unused.length }} <span class="fs-4 text-secondary">· {{ bytes(unusedSize) }}</span></div>
-        </div></div></div>
-        <div class="col-6 col-lg-3"><div class="card card-sm"><div class="card-body">
-          <div class="subheader">Tanpa tag</div><div class="h2 mb-0">{{ untagged }}</div>
-        </div></div></div>
+    <div class="p-6 max-w-7xl mx-auto space-y-6">
+      <!-- 4 KPI Summary Cards -->
+      <div v-if="data" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader class="pb-1 p-4">
+            <CardTitle class="text-xs uppercase tracking-wider text-muted-foreground">Total Images</CardTitle>
+          </CardHeader>
+          <CardContent class="p-4 pt-0">
+            <div class="text-2xl font-bold font-mono">{{ data.length }}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader class="pb-1 p-4">
+            <CardTitle class="text-xs uppercase tracking-wider text-muted-foreground">Disk Consumption</CardTitle>
+          </CardHeader>
+          <CardContent class="p-4 pt-0">
+            <div class="text-2xl font-bold font-mono text-primary">{{ bytes(totalSize) }}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader class="pb-1 p-4">
+            <CardTitle class="text-xs uppercase tracking-wider text-muted-foreground">Dangling / Unused</CardTitle>
+          </CardHeader>
+          <CardContent class="p-4 pt-0">
+            <div class="text-2xl font-bold font-mono text-amber-500">
+              {{ unused.length }}
+              <span class="text-xs font-normal text-muted-foreground">({{ bytes(unusedSize) }})</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader class="pb-1 p-4">
+            <CardTitle class="text-xs uppercase tracking-wider text-muted-foreground">Untagged</CardTitle>
+          </CardHeader>
+          <CardContent class="p-4 pt-0">
+            <div class="text-2xl font-bold font-mono text-muted-foreground">{{ untagged }}</div>
+          </CardContent>
+        </Card>
       </div>
-      <div>
-        <LoadState :loading="loading" :error="error" :empty="sorted.length === 0" what="image" @retry="reload">
+
+      <!-- Images Table -->
+      <div class="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
+        <LoadState :loading="loading" :error="error" :empty="sorted.length === 0" what="images" @retry="reload">
           <template #empty>
-            <div class="empty-icon"><IconStack2 :size="40" /></div>
-            <p class="empty-title">Belum ada image</p>
-            <p class="empty-subtitle text-secondary">Tulis nama image di kolom atas, misalnya <code>nginx:alpine</code>, lalu pilih Pull image.</p>
+            <div class="p-12 text-center space-y-3">
+              <div class="size-12 rounded-xl bg-muted text-muted-foreground flex items-center justify-center mx-auto">
+                <Layers class="size-6" />
+              </div>
+              <h3 class="text-base font-semibold text-foreground">No Images Found</h3>
+              <p class="text-xs text-muted-foreground max-w-sm mx-auto">
+                Enter an image name in the box above (e.g. <code>nginx:alpine</code>) and click "Pull image".
+              </p>
+            </div>
           </template>
-          <div class="table-responsive-md">
-            <table class="table table-vcenter table-stack dd-table">
-              <thead><tr><th>Tag</th><th>ID</th><th>Ukuran</th><th>Dibuat</th><th>Dipakai</th><th class="w-1"><span class="visually-hidden">Aksi</span></th></tr></thead>
-              <tbody>
-                <tr v-for="i in sorted" :key="i.id">
-                  <td>
-                    <div class="tags">
-                      <span v-for="t in i.tags" :key="t" class="font-monospace">{{ t }}</span>
-                      <span v-if="i.tags.length === 0" class="text-secondary">tanpa tag</span>
-                    </div>
-                  </td>
-                  <td data-label="ID" class="font-monospace text-secondary">{{ shortId(i.id) }}</td>
-                  <td data-label="Ukuran">{{ bytes(i.size) }}</td>
-                  <td data-label="Dibuat" class="text-secondary">{{ ago(i.created) }}</td>
-                  <td data-label="Dipakai">
-                    <span v-if="i.containers > 0" class="badge bg-green-lt">{{ i.containers }} container</span>
-                    <span v-else class="text-secondary">tidak</span>
-                  </td>
-                  <td class="text-end"><button class="btn btn-icon btn-ghost-danger" type="button" :aria-label="`Hapus ${i.tags[0] ?? shortId(i.id)}`" title="Hapus" @click="remove(i)"><IconTrash :size="18" /></button></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Repository / Tag</TableHead>
+                <TableHead>Image ID</TableHead>
+                <TableHead>Size</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>In Use</TableHead>
+                <TableHead class="text-right w-16">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="i in sorted" :key="i.id">
+                <TableCell>
+                  <div class="space-y-0.5">
+                    <span v-for="t in i.tags" :key="t" class="font-mono text-xs font-medium text-foreground block">
+                      {{ t }}
+                    </span>
+                    <span v-if="i.tags.length === 0" class="text-xs text-muted-foreground italic font-mono">
+                      &lt;none&gt;:&lt;none&gt;
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell class="font-mono text-xs text-muted-foreground">
+                  {{ shortId(i.id) }}
+                </TableCell>
+                <TableCell class="font-mono text-xs">
+                  {{ bytes(i.size) }}
+                </TableCell>
+                <TableCell class="text-xs text-muted-foreground">
+                  {{ ago(i.created) }}
+                </TableCell>
+                <TableCell>
+                  <Badge v-if="i.containers > 0" variant="success" class="text-[11px] font-mono">
+                    {{ i.containers }} container{{ i.containers === 1 ? '' : 's' }}
+                  </Badge>
+                  <span v-else class="text-xs text-muted-foreground font-mono">unused</span>
+                </TableCell>
+                <TableCell class="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    class="size-7 text-muted-foreground hover:text-destructive"
+                    :title="`Delete image ${i.tags[0] ?? shortId(i.id)}`"
+                    @click="remove(i)"
+                  >
+                    <Trash2 class="size-3.5" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </LoadState>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.pull { min-width: min(420px, 100%); }
-.tags { display: grid; gap: 2px; overflow-wrap: anywhere; }
-</style>

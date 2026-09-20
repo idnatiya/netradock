@@ -1,13 +1,28 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { IconBox, IconChevronDown, IconDatabase, IconLayoutDashboard, IconLogout, IconMenu2, IconMoon, IconNetwork, IconStack2, IconSun } from '@tabler/icons-vue'
+import {
+  Boxes,
+  CheckCircle2,
+  HardDrive,
+  LayoutDashboard,
+  Layers,
+  LogOut,
+  Menu,
+  Moon,
+  Network,
+  Sun,
+  X,
+  XCircle,
+} from 'lucide-vue-next'
 import { api, currentUser, notice, type System } from '@/api'
 import { useLiveStats } from '@/liveStats'
 import { theme, toggleTheme } from '@/theme'
 import { useLoad } from '@/useLoad'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import BrandLogo from '@/components/BrandLogo.vue'
-import Dropdown from '@/components/Dropdown.vue'
 import GlobalSearch from '@/components/GlobalSearch.vue'
 import StatusBar from '@/components/StatusBar.vue'
 
@@ -27,7 +42,6 @@ const ramPct = computed(() => {
   const latestMem = live.total.mem.at(-1) ?? 0
   return Math.min(100, (latestMem / memTotal.value) * 100)
 })
-const meterBarColor = (pct: number) => (pct >= 85 ? 'bg-danger' : pct >= 65 ? 'bg-warning' : 'bg-primary')
 
 interface NavItem {
   to: string
@@ -43,28 +57,28 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
-    title: 'UTAMA',
+    title: 'Overview',
     items: [
-      { to: '/', label: 'Ringkasan', icon: IconLayoutDashboard },
+      { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     ],
   },
   {
-    title: 'SUMBER DAYA',
+    title: 'Resources',
     items: [
       {
         to: '/containers',
         label: 'Containers',
-        icon: IconBox,
+        icon: Boxes,
         badge: () => sys.data.value?.containers_running !== undefined ? `${sys.data.value.containers_running}` : undefined,
       },
       {
         to: '/images',
         label: 'Images',
-        icon: IconStack2,
+        icon: Layers,
         badge: () => sys.data.value?.images !== undefined ? `${sys.data.value.images}` : undefined,
       },
-      { to: '/volumes', label: 'Volumes', icon: IconDatabase },
-      { to: '/networks', label: 'Networks', icon: IconNetwork },
+      { to: '/volumes', label: 'Volumes', icon: HardDrive },
+      { to: '/networks', label: 'Networks', icon: Network },
     ],
   },
 ]
@@ -88,340 +102,177 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
 </script>
 
 <template>
-  <div class="shell">
-    <header class="shell-top">
-      <div class="shell-top-left">
-        <button
-          class="btn btn-icon topbar-btn d-lg-none me-2"
-          type="button"
-          aria-controls="sidebar-menu"
-          :aria-expanded="menuOpen"
-          aria-label="Buka menu"
+  <div class="flex h-dvh flex-col bg-background text-foreground overflow-hidden">
+    <!-- Top Header -->
+    <header class="h-14 shrink-0 border-b border-border bg-card/60 px-4 flex items-center justify-between gap-4 backdrop-blur-md z-30 select-none">
+      <div class="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="lg:hidden"
+          aria-label="Toggle navigation menu"
           @click="menuOpen = !menuOpen"
         >
-          <IconMenu2 :size="18" />
-        </button>
-        <RouterLink to="/" class="brand text-reset text-decoration-none">
+          <Menu class="size-4" />
+        </Button>
+        <RouterLink to="/" class="flex items-center text-foreground hover:opacity-90 transition-opacity">
           <BrandLogo />
         </RouterLink>
       </div>
 
-      <div class="shell-top-center">
+      <!-- Search in center -->
+      <div class="flex-1 max-w-md mx-auto hidden sm:flex justify-center">
         <GlobalSearch />
       </div>
 
-      <div class="shell-top-right">
-        <div v-if="sys.data.value" class="engine-status d-none d-md-flex" title="Docker Engine Running">
-          <span class="status-dot"></span>
-          <span class="status-text">Engine running</span>
+      <!-- Right actions -->
+      <div class="flex items-center gap-2">
+        <div v-if="sys.data.value" class="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-full border border-border bg-muted/40 text-xs font-mono">
+          <span class="size-2 rounded-full bg-emerald-500 animate-pulse-dot" />
+          <span class="text-muted-foreground">Engine v{{ sys.data.value.server_version }}</span>
         </div>
 
-        <button
-          type="button"
-          class="btn btn-icon topbar-btn"
-          :aria-label="theme === 'dark' ? 'Pakai tema terang' : 'Pakai tema gelap'"
-          :title="theme === 'dark' ? 'Tema terang' : 'Tema gelap'"
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
           @click="toggleTheme"
         >
-          <IconSun v-if="theme === 'dark'" :size="18" />
-          <IconMoon v-else :size="18" />
-        </button>
+          <Sun v-if="theme === 'dark'" class="size-4 text-muted-foreground hover:text-foreground" />
+          <Moon v-else class="size-4 text-muted-foreground hover:text-foreground" />
+        </Button>
 
-        <Dropdown label="Menu akun" end class="account-dropdown-btn">
-          <template #toggle>
-            <span class="avatar avatar-xs">{{ initials() }}</span>
-            <span class="account-name d-none d-sm-inline">{{ currentUser }}</span>
-            <IconChevronDown :size="14" class="account-chevron" />
-          </template>
-          <button type="button" class="dropdown-item" role="menuitem" @click="logout">
-            <IconLogout :size="16" class="icon dropdown-item-icon" />
-            Keluar
-          </button>
-        </Dropdown>
+        <div class="flex items-center gap-2 pl-2 border-l border-border">
+          <div class="size-7 rounded-full bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-mono text-xs font-semibold">
+            {{ initials() }}
+          </div>
+          <span class="text-xs font-medium hidden lg:inline max-w-[100px] truncate text-muted-foreground">{{ currentUser }}</span>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title="Log out"
+            @click="logout"
+          >
+            <LogOut class="size-4 text-muted-foreground hover:text-destructive" />
+          </Button>
+        </div>
       </div>
     </header>
 
-    <aside id="sidebar-menu" class="shell-nav" :class="{ open: menuOpen }">
-      <div class="shell-nav-content">
-        <div v-for="g in navGroups" :key="g.title || 'main'" class="nav-group mb-3">
-          <div v-if="g.title" class="nav-group-header">{{ g.title }}</div>
-          <ul class="nav-list">
-            <li v-for="l in g.items" :key="l.to">
-              <RouterLink class="nav-item" :class="{ active: isActive(l.to) }" :to="l.to" :aria-current="isActive(l.to) ? 'page' : undefined">
-                <component :is="l.icon" :size="18" class="flex-shrink-0" />
-                <span class="flex-grow-1">{{ l.label }}</span>
-                <span v-if="l.badge && l.badge() !== undefined" class="badge bg-secondary-lt font-monospace px-1.5 py-0.5" style="font-size: 11px;">
+    <!-- Main Workspace (Sidebar + Content View) -->
+    <div class="flex flex-1 min-h-0 relative">
+      <!-- Mobile backdrop -->
+      <div
+        v-if="menuOpen"
+        class="fixed inset-0 z-40 bg-background/80 backdrop-blur-xs lg:hidden"
+        @click="menuOpen = false"
+      />
+
+      <!-- Sidebar -->
+      <aside
+        class="fixed inset-y-0 left-0 z-50 w-60 border-r border-border bg-card flex flex-col transition-transform duration-200 lg:static lg:translate-x-0"
+        :class="menuOpen ? 'translate-x-0' : '-translate-x-full'"
+      >
+        <!-- Mobile close button -->
+        <div class="flex lg:hidden items-center justify-between h-14 px-4 border-b border-border">
+          <BrandLogo />
+          <Button variant="ghost" size="icon-sm" @click="menuOpen = false">
+            <X class="size-4" />
+          </Button>
+        </div>
+
+        <!-- Navigation items -->
+        <div class="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+          <div v-for="g in navGroups" :key="g.title || 'main'" class="space-y-1">
+            <h4 v-if="g.title" class="px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              {{ g.title }}
+            </h4>
+            <div class="space-y-0.5 pt-1">
+              <RouterLink
+                v-for="l in g.items"
+                :key="l.to"
+                :to="l.to"
+                class="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors"
+                :class="
+                  isActive(l.to)
+                    ? 'bg-accent text-accent-foreground font-semibold shadow-2xs'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                "
+              >
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <component :is="l.icon" class="size-4 shrink-0" />
+                  <span class="truncate">{{ l.label }}</span>
+                </div>
+                <Badge
+                  v-if="l.badge && l.badge() !== undefined"
+                  variant="secondary"
+                  class="font-mono text-[10px] py-0 px-1.5"
+                >
                   {{ l.badge() }}
-                </span>
+                </Badge>
               </RouterLink>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div v-if="sys.data.value" class="shell-nav-footer">
-        <div class="nav-meters">
-          <div class="meter-row">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="meter-label">CPU Host</span>
-              <span class="meter-val font-monospace">{{ cpuPct.toFixed(1) }}%</span>
             </div>
-            <div class="progress progress-xs">
+          </div>
+        </div>
+
+        <!-- Sidebar Telemetry Footer -->
+        <div v-if="sys.data.value" class="p-3 border-t border-border bg-muted/20 space-y-3">
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between text-[11px] font-mono text-muted-foreground">
+              <span>CPU Host</span>
+              <span class="font-medium text-foreground">{{ cpuPct.toFixed(1) }}%</span>
+            </div>
+            <div class="h-1.5 w-full rounded-full bg-muted overflow-hidden">
               <div
-                class="progress-bar"
-                :class="meterBarColor(cpuPct)"
+                class="h-full rounded-full bg-primary transition-all duration-300"
                 :style="{ width: `${Math.min(100, Math.max(2, cpuPct))}%` }"
-              ></div>
+              />
             </div>
           </div>
-          <div class="meter-row mt-2.5">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="meter-label">RAM Host</span>
-              <span class="meter-val font-monospace">{{ ramPct.toFixed(1) }}%</span>
+
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between text-[11px] font-mono text-muted-foreground">
+              <span>RAM Host</span>
+              <span class="font-medium text-foreground">{{ ramPct.toFixed(1) }}%</span>
             </div>
-            <div class="progress progress-xs">
+            <div class="h-1.5 w-full rounded-full bg-muted overflow-hidden">
               <div
-                class="progress-bar"
-                :class="meterBarColor(ramPct)"
+                class="h-full rounded-full bg-sky-500 transition-all duration-300"
                 :style="{ width: `${Math.min(100, Math.max(2, ramPct))}%` }"
-              ></div>
+              />
             </div>
           </div>
         </div>
-        <button type="button" class="btn btn-outline-secondary w-100 mt-3 d-lg-none" @click="logout">
-          <IconLogout :size="16" class="icon" />Keluar ({{ currentUser }})
-        </button>
-      </div>
-    </aside>
-    <div v-if="menuOpen" class="shell-scrim d-lg-none" @click="menuOpen = false"></div>
+      </aside>
 
-    <main class="shell-main">
-      <div class="page-wrapper">
-        <div v-if="notice" class="container-xl pt-3">
-          <div class="alert alert-dismissible mb-0" :class="notice.kind === 'ok' ? 'alert-success' : 'alert-danger'" role="status">
-            <div class="text-break-all">{{ notice.text }}</div>
-            <button type="button" class="btn-close" aria-label="Tutup pesan" @click="notice = null"></button>
+      <!-- Main Scrollable Content Area -->
+      <main class="flex-1 min-w-0 overflow-y-auto">
+        <!-- Toast / Notice alert -->
+        <div v-if="notice" class="p-4 pb-0 max-w-7xl mx-auto">
+          <div
+            class="flex items-center justify-between gap-3 p-3 rounded-lg border text-xs"
+            :class="
+              notice.kind === 'ok'
+                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                : 'border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+            "
+          >
+            <div class="flex items-center gap-2 truncate">
+              <CheckCircle2 v-if="notice.kind === 'ok'" class="size-4 shrink-0" />
+              <XCircle v-else class="size-4 shrink-0" />
+              <span class="truncate">{{ notice.text }}</span>
+            </div>
+            <Button variant="ghost" size="icon-sm" class="size-5" @click="notice = null">
+              <X class="size-3" />
+            </Button>
           </div>
         </div>
-        <RouterView />
-      </div>
-    </main>
 
-    <StatusBar class="shell-status" :sys="sys.data.value ?? null" :error="sys.error.value" />
+        <RouterView />
+      </main>
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <StatusBar :sys="sys.data.value ?? null" :error="sys.error.value" />
   </div>
 </template>
-
-<style scoped>
-.shell {
-  display: grid;
-  grid-template-columns: var(--nav-width) 1fr;
-  grid-template-rows: var(--topbar-height) 1fr var(--statusbar-height);
-  grid-template-areas: 'top top' 'nav main' 'status status';
-  height: 100dvh;
-}
-
-/* Docker Desktop's title bar spans the whole window, above the sidebar. */
-.shell-top {
-  grid-area: top;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: var(--topbar-height);
-  padding: 0 0.75rem;
-  background: var(--topbar-bg);
-  border-bottom: 1px solid var(--topbar-border);
-  color: var(--topbar-fg);
-  user-select: none;
-  z-index: 1020;
-}
-
-.shell-top-left {
-  display: flex;
-  align-items: center;
-  width: calc(var(--nav-width) - 0.75rem);
-  flex-shrink: 0;
-}
-
-.shell-top-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-width: 0;
-  padding: 0 1rem;
-}
-
-.shell-top-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.brand {
-  color: var(--topbar-fg);
-  display: inline-flex;
-  align-items: center;
-}
-
-.engine-status {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  margin-right: 0.25rem;
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #20c997;
-  box-shadow: 0 0 6px rgba(32, 201, 151, 0.7);
-}
-
-.status-text {
-  font-size: 11px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
-  white-space: nowrap;
-}
-
-.topbar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: 6px;
-  color: var(--topbar-fg);
-  background: transparent;
-  border: 1px solid transparent;
-  transition: background-color 0.15s ease;
-}
-
-.topbar-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--topbar-fg);
-}
-
-:deep(.account-dropdown-btn) {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  height: 32px;
-  padding: 0 0.5rem 0 0.25rem;
-  border-radius: 6px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--topbar-fg);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-:deep(.account-dropdown-btn:hover) {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-:deep(.account-dropdown-btn .avatar-xs) {
-  width: 24px;
-  height: 24px;
-  font-size: 11px;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-:deep(.account-name) {
-  font-size: 13px;
-  font-weight: 500;
-  color: #ffffff;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-:deep(.account-chevron) {
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.shell-nav {
-  grid-area: nav;
-  display: flex;
-  flex-direction: column;
-  background: var(--nav-bg);
-  border-right: var(--tblr-border-width) solid var(--nav-border);
-  overflow: hidden;
-}
-.shell-nav-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem 0.5rem 0.25rem;
-}
-.shell-nav-footer {
-  padding: 0.85rem 0.75rem;
-  border-top: 1px solid var(--tblr-border-color-translucent);
-  background: var(--tblr-bg-surface-secondary);
-  flex-shrink: 0;
-}
-.meter-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--tblr-secondary);
-}
-.meter-val {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--tblr-body-color);
-}
-.shell-main { grid-area: main; overflow: auto; background: var(--tblr-body-bg); }
-.shell-status { grid-area: status; }
-
-.nav-list { list-style: none; margin: 0; padding: 0; }
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.5rem 0.625rem;
-  margin-bottom: 2px;
-  border-radius: var(--tblr-border-radius);
-  color: var(--tblr-body-color);
-  text-decoration: none;
-  font-size: 13.5px;
-}
-.nav-item:hover { background: var(--tblr-border-color-translucent); }
-.nav-item.active { background: var(--tblr-primary-lt); color: var(--tblr-primary); font-weight: 500; }
-
-@media (max-width: 991.98px) {
-  .shell {
-    grid-template-columns: 1fr;
-    grid-template-rows: var(--topbar-height) 1fr var(--statusbar-height);
-    grid-template-areas: 'top' 'main' 'status';
-  }
-  .shell-top { padding: 0 0.5rem; }
-  .shell-top-left { width: auto; }
-  .shell-top-center { padding: 0 0.375rem; }
-  .shell-nav {
-    position: fixed;
-    top: var(--topbar-height);
-    bottom: var(--statusbar-height);
-    left: 0;
-    z-index: 1040;
-    width: var(--nav-width);
-    transform: translateX(-100%);
-    transition: transform 0.15s ease-out;
-  }
-  .shell-nav.open { transform: none; }
-  .shell-scrim { position: fixed; inset: 0; z-index: 1030; background: rgb(24 36 51 / 0.4); }
-}
-</style>

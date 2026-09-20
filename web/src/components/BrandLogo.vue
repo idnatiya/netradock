@@ -1,29 +1,15 @@
 <script setup lang="ts">
-import { IconBrandDocker } from '@tabler/icons-vue'
+import { Boxes } from 'lucide-vue-next'
 </script>
 
 <template>
-  <span class="brand-container d-inline-flex align-items-center gap-2">
-    <span class="brand-icon"><IconBrandDocker :size="22" stroke-width="2" /></span>
-    <span class="brand-title">Netradock</span>
-  </span>
+  <div class="flex items-center gap-2.5 select-none">
+    <div class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
+      <Boxes class="size-4.5" :stroke-width="2.2" />
+    </div>
+    <div class="flex flex-col">
+      <span class="text-sm font-semibold tracking-tight text-foreground leading-none">Netradock</span>
+      <span class="text-[10px] text-muted-foreground font-mono tracking-wider leading-tight">CONTAINERS</span>
+    </div>
+  </div>
 </template>
-
-<style scoped>
-.brand-container {
-  user-select: none;
-}
-.brand-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-}
-.brand-title {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #ffffff;
-  line-height: 1;
-}
-</style>

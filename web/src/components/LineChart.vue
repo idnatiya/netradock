@@ -11,7 +11,7 @@ const props = withDefaults(
     color?: string
   }>(),
   {
-    color: 'var(--tblr-primary)',
+    color: '#38bdf8',
   },
 )
 
@@ -77,167 +77,102 @@ const latest = computed(() => props.values.at(-1))
 </script>
 
 <template>
-  <figure class="line-chart">
-    <figcaption class="chart-header">
-      <div class="d-flex align-items-center gap-2">
-        <span class="chart-dot" :style="{ backgroundColor: color }"></span>
-        <span class="subheader mb-0">{{ title }}</span>
+  <figure class="m-0 select-none">
+    <figcaption class="flex items-center justify-between gap-3 mb-3">
+      <div class="flex items-center gap-2">
+        <span class="size-2 rounded-full" :style="{ backgroundColor: color }" />
+        <span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">{{ title }}</span>
       </div>
-      <strong class="h2 mb-0 font-monospace">{{ latest === undefined ? 'Menunggu...' : format(latest) }}</strong>
+      <strong class="text-lg font-mono font-semibold tracking-tight text-foreground">
+        {{ latest === undefined ? 'Waiting...' : format(latest) }}
+      </strong>
     </figcaption>
 
-    <div class="plot">
+    <div class="relative py-1">
       <svg
         :viewBox="`0 0 ${W} ${H}`"
         preserveAspectRatio="none"
         role="img"
-        :aria-label="`${title}, 60 detik terakhir, nilai terbaru ${latest === undefined ? 'belum ada' : format(latest)}`"
+        class="block w-full h-[120px] overflow-visible touch-none"
+        :aria-label="`${title}, last 60 seconds, latest ${latest === undefined ? 'none' : format(latest)}`"
         @pointermove="onMove"
         @pointerleave="hover = null"
       >
         <defs>
           <linearGradient :id="gradId" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" :stop-color="color" stop-opacity="0.32" />
+            <stop offset="0%" :stop-color="color" stop-opacity="0.25" />
             <stop offset="100%" :stop-color="color" stop-opacity="0.0" />
           </linearGradient>
           <filter :id="glowId" x="-10%" y="-10%" width="120%" height="120%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" :flood-color="color" flood-opacity="0.35" />
+            <feDropShadow dx="0" dy="2" stdDeviation="3" :flood-color="color" flood-opacity="0.3" />
           </filter>
         </defs>
 
-        <line :x1="0" :x2="W" :y1="H - 0.5" :y2="H - 0.5" class="axis" />
-        <line :x1="0" :x2="W" :y1="y(top / 1.15)" :y2="y(top / 1.15)" class="grid" />
+        <!-- Horizontal grid lines -->
+        <g stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="3 3">
+          <line :x1="0" :y1="H * 0.25" :x2="W" :y2="H * 0.25" />
+          <line :x1="0" :y1="H * 0.5" :x2="W" :y2="H * 0.5" />
+          <line :x1="0" :y1="H * 0.75" :x2="W" :y2="H * 0.75" />
+        </g>
 
-        <path :d="areaPath" :fill="`url(#${gradId})`" />
-        <path :d="path" class="line" :stroke="color" :filter="`url(#${glowId})`" vector-effect="non-scaling-stroke" />
+        <!-- Base axis -->
+        <line :x1="0" :y1="H" :x2="W" :y2="H" stroke="currentColor" stroke-opacity="0.15" />
 
+        <!-- Gradient fill under curve -->
+        <path v-if="areaPath" :d="areaPath" :fill="`url(#${gradId})`" />
+
+        <!-- Smooth Bézier Spline Line -->
+        <path
+          v-if="path"
+          :d="path"
+          :stroke="color"
+          fill="none"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          :filter="`url(#${glowId})`"
+        />
+
+        <!-- Hover crosshair & point indicator -->
         <g v-if="hover !== null && values[hover] !== undefined">
           <line
             :x1="x(hover + offset)"
-            :x2="x(hover + offset)"
             :y1="0"
+            :x2="x(hover + offset)"
             :y2="H"
-            class="cross"
-            vector-effect="non-scaling-stroke"
+            stroke="currentColor"
+            stroke-opacity="0.3"
+            stroke-dasharray="2 2"
           />
           <circle
             :cx="x(hover + offset)"
             :cy="y(values[hover]!)"
-            r="4.5"
+            r="4"
             :fill="color"
-            stroke="var(--tblr-bg-surface)"
-            stroke-width="2.5"
+            stroke="hsl(var(--background))"
+            stroke-width="2"
           />
         </g>
       </svg>
 
-      <span class="max">Puncak: {{ format(top / 1.15) }}</span>
+      <span class="absolute -top-1.5 right-0 text-[10px] font-mono text-muted-foreground">
+        Peak: {{ format(top / 1.15) }}
+      </span>
+
+      <!-- Tooltip -->
       <div
         v-if="hover !== null && values[hover] !== undefined"
-        class="tip"
+        class="absolute top-1 -translate-x-1/2 flex items-center gap-1.5 px-2 py-1 rounded-md border border-border bg-popover text-popover-foreground shadow-md text-xs font-mono pointer-events-none z-10"
         :style="{ left: `${(x(hover + offset) / W) * 100}%` }"
       >
-        <span class="tip-val">{{ format(values[hover]!) }}</span>
-        <span class="tip-time">{{ values.length - 1 - hover }}s lalu</span>
+        <span class="font-semibold">{{ format(values[hover]!) }}</span>
+        <span class="text-muted-foreground text-[10px]">{{ values.length - 1 - hover }}s ago</span>
       </div>
     </div>
 
-    <div class="ticks">
-      <span>60 detik lalu</span>
-      <span>sekarang</span>
+    <div class="flex justify-between mt-1 text-[11px] font-mono text-muted-foreground">
+      <span>60s ago</span>
+      <span>now</span>
     </div>
   </figure>
 </template>
-
-<style scoped>
-.line-chart {
-  margin: 0;
-}
-.chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.chart-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  box-shadow: 0 0 6px rgba(var(--tblr-primary-rgb), 0.4);
-}
-.plot {
-  position: relative;
-  border-radius: var(--tblr-border-radius);
-  padding: 4px 0;
-}
-svg {
-  display: block;
-  width: 100%;
-  height: 130px;
-  overflow: visible;
-  touch-action: none;
-}
-.line {
-  fill: none;
-  stroke-width: 2.25;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-.axis {
-  stroke: var(--tblr-border-color);
-  stroke-width: 1;
-}
-.grid {
-  stroke: var(--tblr-border-color);
-  stroke-width: 1;
-  stroke-dasharray: 4 4;
-}
-.cross {
-  stroke: var(--tblr-secondary);
-  stroke-width: 1;
-  stroke-dasharray: 2 2;
-}
-.max {
-  position: absolute;
-  top: -6px;
-  right: 0;
-  font-size: 11px;
-  color: var(--tblr-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.tip {
-  position: absolute;
-  top: 4px;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
-  background: var(--tblr-bg-surface-secondary);
-  color: var(--tblr-body-color);
-  border: 1px solid var(--tblr-border-color);
-  border-radius: 6px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(4px);
-  font-size: 11px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 10;
-}
-.tip-val {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.tip-time {
-  color: var(--tblr-secondary);
-}
-.ticks {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
-  font-size: 11px;
-  color: var(--tblr-secondary);
-}
-</style>
