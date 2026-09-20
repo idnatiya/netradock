@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Loader2,
   Moon,
-  ShieldCheck,
   Sun,
 } from 'lucide-vue-next'
 import { api, currentUser } from '@/api'
@@ -225,22 +224,6 @@ async function submit() {
             <span>{{ busy ? 'Authenticating...' : 'Sign In' }}</span>
           </Button>
         </form>
-
-        <!-- Credentials Hint Card -->
-        <div class="p-3.5 rounded-lg border border-border bg-card/60 text-center space-y-1">
-          <p class="text-xs text-muted-foreground">Configured via environment variables:</p>
-          <div class="flex items-center justify-center gap-1.5 flex-wrap">
-            <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[11px] text-foreground">NETRADOCK_USERNAME</code>
-            <span class="text-xs text-muted-foreground">&</span>
-            <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[11px] text-foreground">NETRADOCK_PASSWORD</code>
-          </div>
-        </div>
-
-        <!-- Security Note -->
-        <p class="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-          <ShieldCheck class="size-3.5 text-emerald-500" />
-          <span>Protected with HTTP-only cookie and HMAC token security.</span>
-        </p>
       </div>
     </div>
   </div>
