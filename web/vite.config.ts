@@ -13,8 +13,10 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': backend,
-      '/ws': { target: backend, ws: true },
+      // Keep the browser's Host header: the API rejects writes whose Origin and Host disagree,
+      // and Vite would otherwise rewrite Host to the backend's.
+      '/api': { target: backend, changeOrigin: false },
+      '/ws': { target: backend, ws: true, changeOrigin: false },
     },
   },
 })

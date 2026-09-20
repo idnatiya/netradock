@@ -1,4 +1,5 @@
 # Values from .env (if present) override the dev defaults below. Keep .env values unquoted.
+# Exception: make eats the `$` in a bcrypt hash, so NETRADOCK_PASSWORD_HASH is read raw in dev-api.
 -include .env
 export
 
@@ -13,7 +14,7 @@ NETRADOCK_SECURE_COOKIE ?= false
 NETRADOCK_PORT ?= 18080
 WEB_PORT ?= 5178
 
-.PHONY: dev dev-api dev-web install build test audit
+.PHONY: dev dev-api dev-web install build test audit hash
 
 ## dev: run the Go API and the Vite dev server together (Ctrl+C stops both)
 dev: web/node_modules web/dist/index.html
@@ -25,7 +26,7 @@ dev: web/node_modules web/dist/index.html
 	wait
 
 dev-api: web/dist/index.html
-	go run ./cmd/web
+	@NETRADOCK_PASSWORD_HASH="$$(sed -n 's/^NETRADOCK_PASSWORD_HASH=//p' .env 2>/dev/null)" go run ./cmd/web
 
 dev-web: web/node_modules
 	cd web && NETRADOCK_BACKEND=http://localhost:$(NETRADOCK_PORT) npx vite --port $(WEB_PORT) --strictPort
@@ -48,6 +49,12 @@ build: web/node_modules
 
 test:
 	go test ./...
+
+## hash: prompt for a password and print the NETRADOCK_PASSWORD_HASH line for .env
+hash:
+	@printf 'Password: ' >&2; \
+	stty -echo 2>/dev/null; read -r pass; stty echo 2>/dev/null; printf '\n' >&2; \
+	printf '%s' "$$pass" | go run ./cmd/hash | sed 's/^/NETRADOCK_PASSWORD_HASH=/'
 
 ## audit: check Go and npm dependencies for known vulnerabilities (needs network)
 audit: web/node_modules
