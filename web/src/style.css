@@ -4,11 +4,14 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
+    --sidebar: 0 0% 98%;
+    --sidebar-foreground: 240 10% 3.9%;
+    --sidebar-border: 240 5.9% 90%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -20,7 +23,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --ring: 217 91% 60%;
     --radius: 0.5rem;
 
     /* Status colors */
@@ -31,30 +34,47 @@
   }
 
   .dark {
-    --background: 240 10% 3.9%; /* #09090b */
-    --foreground: 0 0% 98%;
-    --card: 240 10% 5.9%; /* #0f0f12 */
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 5.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%; /* #27272a */
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    /* Level 0: Canvas Background (comfortable deep charcoal, eliminating pitch-black) */
+    --background: 225 9% 9%; /* #141518 */
+    --foreground: 225 10% 96%; /* #f4f4f6 */
 
-    /* Status colors */
-    --success: 142 71% 45%;
+    /* Level 1: Sunken Sidebar & Rails */
+    --sidebar: 225 12% 7.5%; /* #101114 */
+    --sidebar-foreground: 225 10% 96%;
+    --sidebar-border: 225 10% 16%; /* #24262e */
+
+    /* Level 2: Elevated Cards & Modals (clearly floats with contrast over the canvas) */
+    --card: 225 10% 14.5%; /* #202227 */
+    --card-foreground: 225 10% 96%;
+    --popover: 225 10% 16%; /* #24262c */
+    --popover-foreground: 225 10% 96%;
+
+    /* Level 3: Inner Wells & Inputs */
+    --muted: 225 11% 19%; /* #2a2d34 */
+    --muted-foreground: 225 8% 65%; /* #9ea0ab */
+    --input: 225 10% 18%; /* #272930 */
+
+    /* Level 4: Active Selection & Interactive Hover */
+    --accent: 225 12% 24%; /* #353842 */
+    --accent-foreground: 225 10% 98%;
+
+    /* Borders & Rings */
+    --border: 225 10% 20%; /* #2c2e36 */
+    --ring: 217 91% 60%; /* #3b82f6 */
+
+    /* Primary Actions */
+    --primary: 217 91% 60%; /* #3b82f6 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 225 11% 19%;
+    --secondary-foreground: 225 10% 96%;
+
+    /* OpenCode Status Signals */
+    --destructive: 4 100% 62%; /* #ff453a */
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 69% 50%; /* #30d158 */
     --success-foreground: 144 100% 98%;
-    --warning: 38 92% 50%;
+    --warning: 35 100% 52%; /* #ff9f0a */
     --warning-foreground: 48 96% 89%;
   }
 
@@ -69,6 +89,13 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+.bg-sidebar {
+  background-color: hsl(var(--sidebar));
+}
+.border-sidebar {
+  border-color: hsl(var(--sidebar-border));
 }
 
 /* Custom scrollbars */

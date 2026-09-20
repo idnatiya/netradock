@@ -76,7 +76,7 @@ const storageDistribution = computed(() => {
   }
 })
 
-const cpuColor = computed(() => (cpuNow.value >= 80 ? '#f43f5e' : cpuNow.value >= 50 ? '#f59e0b' : '#10b981'))
+const cpuColor = computed(() => (cpuNow.value >= 80 ? '#ff453a' : cpuNow.value >= 50 ? '#ff9f0a' : '#30d158'))
 
 async function start(c: Container) {
   if (await containerAction(c.name, c.id, 'start')) list.reload()
@@ -264,24 +264,24 @@ async function start(c: Container) {
           </Badge>
         </CardHeader>
         <CardContent class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-          <div class="p-4 rounded-lg border border-border bg-card/50">
+          <div class="p-4 rounded-lg border border-border bg-muted/30">
             <LineChart
               title="CPU Load"
               :values="cpuHost"
               :capacity="60"
               :format="pct"
               :floor="5"
-              color="#10b981"
+              color="#30d158"
             />
           </div>
-          <div class="p-4 rounded-lg border border-border bg-card/50">
+          <div class="p-4 rounded-lg border border-border bg-muted/30">
             <LineChart
               title="Memory Usage"
               :values="live.total.mem"
               :capacity="60"
               :format="bytes"
               :floor="64 * 1024 * 1024"
-              color="#0ea5e9"
+              color="#38bdf8"
             />
           </div>
         </CardContent>

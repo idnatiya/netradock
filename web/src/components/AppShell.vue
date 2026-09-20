@@ -104,7 +104,7 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
 <template>
   <div class="flex h-dvh flex-col bg-background text-foreground overflow-hidden">
     <!-- Top Header -->
-    <header class="h-14 shrink-0 border-b border-border bg-card/60 px-4 flex items-center justify-between gap-4 backdrop-blur-md z-30 select-none">
+    <header class="h-14 shrink-0 border-b border-sidebar bg-sidebar/80 px-4 flex items-center justify-between gap-4 backdrop-blur-md z-30 select-none">
       <div class="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -168,13 +168,13 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
         @click="menuOpen = false"
       />
 
-      <!-- Sidebar -->
+      <!-- Sidebar (Level 1: Sunken Navigation Rail) -->
       <aside
-        class="fixed inset-y-0 left-0 z-50 w-60 border-r border-border bg-card flex flex-col transition-transform duration-200 lg:static lg:translate-x-0"
+        class="fixed inset-y-0 left-0 z-50 w-60 border-r border-sidebar bg-sidebar flex flex-col transition-transform duration-200 lg:static lg:translate-x-0"
         :class="menuOpen ? 'translate-x-0' : '-translate-x-full'"
       >
         <!-- Mobile close button -->
-        <div class="flex lg:hidden items-center justify-between h-14 px-4 border-b border-border">
+        <div class="flex lg:hidden items-center justify-between h-14 px-4 border-b border-sidebar">
           <BrandLogo />
           <Button variant="ghost" size="icon-sm" @click="menuOpen = false">
             <X class="size-4" />
@@ -216,7 +216,7 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
         </div>
 
         <!-- Sidebar Telemetry Footer -->
-        <div v-if="sys.data.value" class="p-3 border-t border-border bg-muted/20 space-y-3">
+        <div v-if="sys.data.value" class="p-3 border-t border-sidebar bg-sidebar/50 space-y-3">
           <div class="space-y-1.5">
             <div class="flex items-center justify-between text-[11px] font-mono text-muted-foreground">
               <span>CPU Host</span>
