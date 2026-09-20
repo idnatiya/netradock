@@ -41,7 +41,7 @@ async function remove(i: Image) {
 </script>
 
 <template>
-  <PageHeader pretitle="Docker" title="Image">
+  <PageHeader title="Images">
     <template #meta>
       <div v-if="data" class="text-secondary mt-1">{{ data.length }} image, total {{ bytes(totalSize) }}</div>
     </template>
@@ -73,7 +73,7 @@ async function remove(i: Image) {
           <div class="subheader">Tanpa tag</div><div class="h2 mb-0">{{ untagged }}</div>
         </div></div></div>
       </div>
-      <div class="card">
+      <div>
         <LoadState :loading="loading" :error="error" :empty="sorted.length === 0" what="image" @retry="reload">
           <template #empty>
             <div class="empty-icon"><IconStack2 :size="40" /></div>
@@ -81,7 +81,7 @@ async function remove(i: Image) {
             <p class="empty-subtitle text-secondary">Tulis nama image di kolom atas, misalnya <code>nginx:alpine</code>, lalu pilih Pull image.</p>
           </template>
           <div class="table-responsive-md">
-            <table class="table card-table table-vcenter table-stack">
+            <table class="table table-vcenter table-stack dd-table">
               <thead><tr><th>Tag</th><th>ID</th><th>Ukuran</th><th>Dibuat</th><th>Dipakai</th><th class="w-1"><span class="visually-hidden">Aksi</span></th></tr></thead>
               <tbody>
                 <tr v-for="i in sorted" :key="i.id">
@@ -98,7 +98,7 @@ async function remove(i: Image) {
                     <span v-if="i.containers > 0" class="badge bg-green-lt">{{ i.containers }} container</span>
                     <span v-else class="text-secondary">tidak</span>
                   </td>
-                  <td class="text-end"><button class="btn btn-icon btn-ghost-danger" type="button" :aria-label="`Hapus ${i.tags[0] ?? shortId(i.id)}`" title="Hapus" @click="remove(i)"><IconTrash :size="18" /></button></td>
+                  <td class="text-end"><button class="btn btn-icon btn-ghost-danger row-actions" type="button" :aria-label="`Hapus ${i.tags[0] ?? shortId(i.id)}`" title="Hapus" @click="remove(i)"><IconTrash :size="18" /></button></td>
                 </tr>
               </tbody>
             </table>

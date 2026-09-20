@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { IconBox, IconDatabase, IconLayoutDashboard, IconLogout, IconMoon, IconNetwork, IconStack2, IconSun } from '@tabler/icons-vue'
+import { IconBox, IconDatabase, IconLayoutDashboard, IconLogout, IconMenu2, IconMoon, IconNetwork, IconStack2, IconSun } from '@tabler/icons-vue'
 import { api, currentUser, notice, type System } from '@/api'
 import { theme, toggleTheme } from '@/theme'
 import { useLoad } from '@/useLoad'
 import BrandLogo from '@/components/BrandLogo.vue'
 import Dropdown from '@/components/Dropdown.vue'
+import GlobalSearch from '@/components/GlobalSearch.vue'
+import StatusBar from '@/components/StatusBar.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -40,87 +42,140 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
 </script>
 
 <template>
-  <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
-      <div class="container-fluid">
-        <button
-          class="navbar-toggler"
-          type="button"
-          aria-controls="sidebar-menu"
-          :aria-expanded="menuOpen"
-          aria-label="Buka menu"
-          @click="menuOpen = !menuOpen"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="navbar-brand navbar-brand-autodark">
-          <RouterLink to="/" class="text-reset text-decoration-none"><BrandLogo /></RouterLink>
-        </div>
-        <div class="navbar-nav flex-row d-lg-none">
-          <button type="button" class="btn btn-ghost-secondary btn-icon" :aria-label="theme === 'dark' ? 'Pakai tema terang' : 'Pakai tema gelap'" @click="toggleTheme">
-            <IconSun v-if="theme === 'dark'" :size="20" />
-            <IconMoon v-else :size="20" />
-          </button>
-        </div>
-        <div id="sidebar-menu" class="collapse navbar-collapse" :class="{ show: menuOpen }">
-          <ul class="navbar-nav pt-lg-3">
-            <li v-for="l in links" :key="l.to" class="nav-item" :class="{ active: isActive(l.to) }">
-              <RouterLink class="nav-link" :to="l.to" :aria-current="isActive(l.to) ? 'page' : undefined">
-                <span class="nav-link-icon d-inline-block"><component :is="l.icon" :size="20" /></span>
-                <span class="nav-link-title">{{ l.label }}</span>
-                <span v-if="l.count() !== undefined" class="badge badge-sm bg-secondary-lt ms-auto">{{ l.count() }}</span>
-              </RouterLink>
-            </li>
-          </ul>
-          <div v-if="sys.data.value" class="host mt-auto px-3 py-3 small">
-            <div class="text-uppercase fw-bold opacity-50 mb-1">Host</div>
-            <div class="text-truncate" :title="sys.data.value.name">{{ sys.data.value.name }}</div>
-            <div class="opacity-75">Docker {{ sys.data.value.server_version }} · {{ sys.data.value.architecture }}</div>
-          </div>
-          <div class="d-lg-none px-3 pb-3">
-            <button type="button" class="btn btn-outline-light w-100" @click="logout"><IconLogout :size="18" class="icon" />Keluar ({{ currentUser }})</button>
-          </div>
-        </div>
-      </div>
-  </aside>
+  <div class="shell">
+    <div class="shell-brand">
+      <button
+        class="btn btn-icon btn-ghost-secondary d-lg-none"
+        type="button"
+        aria-controls="sidebar-menu"
+        :aria-expanded="menuOpen"
+        aria-label="Buka menu"
+        @click="menuOpen = !menuOpen"
+      >
+        <IconMenu2 :size="20" />
+      </button>
+      <RouterLink to="/" class="text-reset text-decoration-none"><BrandLogo /></RouterLink>
+    </div>
 
-  <div class="page">
-    <header class="navbar navbar-expand-md d-none d-lg-flex d-print-none">
-      <div class="container-xl">
-        <div class="navbar-nav flex-row order-md-last ms-auto align-items-center gap-2">
-          <button type="button" class="btn btn-ghost-secondary btn-icon" :aria-label="theme === 'dark' ? 'Pakai tema terang' : 'Pakai tema gelap'" :title="theme === 'dark' ? 'Tema terang' : 'Tema gelap'" @click="toggleTheme">
-            <IconSun v-if="theme === 'dark'" :size="20" />
-            <IconMoon v-else :size="20" />
-          </button>
-          <Dropdown label="Menu akun" end class="nav-link d-flex lh-1 text-reset p-0 border-0 bg-transparent">
-            <template #toggle>
-              <span class="avatar avatar-sm bg-primary-lt">{{ initials() }}</span>
-              <span class="ps-2 text-start">
-                <span class="d-block">{{ currentUser }}</span>
-                <span class="d-block mt-1 small text-secondary">Administrator</span>
-              </span>
-            </template>
-            <button type="button" class="dropdown-item" role="menuitem" @click="logout"><IconLogout :size="18" class="icon dropdown-item-icon" />Keluar</button>
-          </Dropdown>
-        </div>
+    <header class="shell-top">
+      <GlobalSearch />
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <button type="button" class="btn btn-ghost-secondary btn-icon" :aria-label="theme === 'dark' ? 'Pakai tema terang' : 'Pakai tema gelap'" :title="theme === 'dark' ? 'Tema terang' : 'Tema gelap'" @click="toggleTheme">
+          <IconSun v-if="theme === 'dark'" :size="20" />
+          <IconMoon v-else :size="20" />
+        </button>
+        <Dropdown label="Menu akun" end class="nav-link d-flex lh-1 text-reset p-0 border-0 bg-transparent">
+          <template #toggle>
+            <span class="avatar avatar-sm bg-primary-lt">{{ initials() }}</span>
+            <span class="ps-2 text-start d-none d-md-block">
+              <span class="d-block">{{ currentUser }}</span>
+              <span class="d-block mt-1 small text-secondary">Administrator</span>
+            </span>
+          </template>
+          <button type="button" class="dropdown-item" role="menuitem" @click="logout"><IconLogout :size="18" class="icon dropdown-item-icon" />Keluar</button>
+        </Dropdown>
       </div>
     </header>
 
-    <div class="page-wrapper">
-      <div v-if="notice" class="container-xl pt-3">
-        <div class="alert alert-dismissible mb-0" :class="notice.kind === 'ok' ? 'alert-success' : 'alert-danger'" role="status">
-          <div class="text-break-all">{{ notice.text }}</div>
-          <button type="button" class="btn-close" aria-label="Tutup pesan" @click="notice = null"></button>
+    <aside id="sidebar-menu" class="shell-nav" :class="{ open: menuOpen }">
+      <ul class="nav-list">
+        <li v-for="l in links" :key="l.to">
+          <RouterLink class="nav-item" :class="{ active: isActive(l.to) }" :to="l.to" :aria-current="isActive(l.to) ? 'page' : undefined">
+            <component :is="l.icon" :size="18" class="flex-shrink-0" />
+            <span class="flex-grow-1">{{ l.label }}</span>
+            <span v-if="l.count() !== undefined" class="badge bg-secondary-lt">{{ l.count() }}</span>
+          </RouterLink>
+        </li>
+      </ul>
+      <button type="button" class="btn w-100 mt-3 d-lg-none" @click="logout"><IconLogout :size="18" class="icon" />Keluar ({{ currentUser }})</button>
+    </aside>
+    <div v-if="menuOpen" class="shell-scrim d-lg-none" @click="menuOpen = false"></div>
+
+    <main class="shell-main">
+      <div class="page-wrapper">
+        <div v-if="notice" class="container-xl pt-3">
+          <div class="alert alert-dismissible mb-0" :class="notice.kind === 'ok' ? 'alert-success' : 'alert-danger'" role="status">
+            <div class="text-break-all">{{ notice.text }}</div>
+            <button type="button" class="btn-close" aria-label="Tutup pesan" @click="notice = null"></button>
+          </div>
         </div>
+        <RouterView />
       </div>
-      <RouterView />
-    </div>
+    </main>
+
+    <StatusBar class="shell-status" :sys="sys.data.value ?? null" :error="sys.error.value" />
   </div>
 </template>
 
 <style scoped>
-.navbar-vertical .navbar-collapse { flex-direction: column; align-items: stretch; }
-.nav-link { width: 100%; }
-/* Tabler floats .nav-link .badge like a notification bubble; here it is an inline count. */
-.navbar .navbar-nav .nav-link .badge { position: static; transform: none; }
-.host { border-top: 1px solid var(--tblr-border-color-translucent); color: var(--tblr-navbar-color); }
+.shell {
+  display: grid;
+  grid-template-columns: var(--nav-width) 1fr;
+  grid-template-rows: var(--topbar-height) 1fr var(--statusbar-height);
+  grid-template-areas: 'brand top' 'nav main' 'status status';
+  height: 100dvh;
+}
+.shell-brand {
+  grid-area: brand;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  background: var(--tblr-bg-surface-secondary);
+  border-right: var(--tblr-border-width) solid var(--tblr-border-color);
+  border-bottom: var(--tblr-border-width) solid var(--tblr-border-color);
+}
+.shell-top {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.75rem;
+  background: var(--tblr-body-bg);
+  border-bottom: var(--tblr-border-width) solid var(--tblr-border-color);
+}
+.shell-nav {
+  grid-area: nav;
+  padding: 0.5rem;
+  overflow-y: auto;
+  background: var(--tblr-bg-surface-secondary);
+  border-right: var(--tblr-border-width) solid var(--tblr-border-color);
+}
+.shell-main { grid-area: main; overflow: auto; background: var(--tblr-body-bg); }
+.shell-status { grid-area: status; }
+
+.nav-list { list-style: none; margin: 0; padding: 0; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  margin-bottom: 2px;
+  border-radius: var(--tblr-border-radius);
+  color: var(--tblr-body-color);
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--tblr-border-color-translucent); }
+.nav-item.active { background: var(--tblr-primary-lt); color: var(--tblr-primary); font-weight: 500; }
+
+@media (max-width: 991.98px) {
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--topbar-height) auto 1fr var(--statusbar-height);
+    grid-template-areas: 'brand' 'top' 'main' 'status';
+  }
+  .shell-brand { border-right: 0; }
+  .shell-nav {
+    position: fixed;
+    top: var(--topbar-height);
+    bottom: var(--statusbar-height);
+    left: 0;
+    z-index: 1040;
+    width: var(--nav-width);
+    transform: translateX(-100%);
+    transition: transform 0.15s ease-out;
+  }
+  .shell-nav.open { transform: none; }
+  .shell-scrim { position: fixed; inset: 0; z-index: 1030; background: rgb(24 36 51 / 0.4); }
+}
 </style>

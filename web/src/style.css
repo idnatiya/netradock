@@ -1,6 +1,6 @@
 /* Small additions on top of Tabler; colors come from --tblr-* so both themes work. */
 
-/* Brand: Docker blue as Tabler's primary, both themes. */
+/* Docker Desktop palette mapped onto Tabler's tokens. */
 :root, [data-bs-theme] {
   --tblr-primary: #1d63ed;
   --tblr-primary-rgb: 29, 99, 237;
@@ -9,12 +9,38 @@
   --tblr-link-color: #1d63ed;
   --tblr-link-color-rgb: 29, 99, 237;
   --tblr-link-hover-color: color-mix(in oklab, #1d63ed, black 15%);
+  --tblr-font-sans-serif: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --tblr-body-font-family: var(--tblr-font-sans-serif);
+  --tblr-body-font-size: 0.875rem;
+  --tblr-border-radius: 6px;
+  --tblr-border-radius-sm: 4px;
+  --nav-width: 232px;
+  --topbar-height: 48px;
+  --statusbar-height: 28px;
+}
+:root, [data-bs-theme='light'] {
+  --tblr-body-bg: #ffffff;
+  --tblr-body-color: #17191e;
+  --tblr-bg-surface: #ffffff;
+  --tblr-bg-surface-secondary: #f9f9fa;
+  --tblr-border-color: #e2e4e9;
+  --tblr-border-color-translucent: rgb(23 25 30 / 0.08);
+  --tblr-secondary: #677285;
 }
 [data-bs-theme='dark'] {
+  --tblr-body-bg: #17191e;
+  --tblr-body-color: #e6e8eb;
+  --tblr-bg-surface: #1c1f26;
+  --tblr-bg-surface-secondary: #21262d;
+  --tblr-border-color: #30363d;
+  --tblr-border-color-translucent: rgb(230 232 235 / 0.1);
+  --tblr-secondary: #8993a4;
   --tblr-link-color: #5b8ff5;
   --tblr-link-color-rgb: 91, 143, 245;
   --tblr-link-hover-color: #85acf8;
 }
+
+body { font-family: var(--tblr-font-sans-serif); }
 
 .brand-mark {
   display: inline-flex;
@@ -27,11 +53,31 @@
   color: #fff;
 }
 
-/* Tabler expects .page to be a direct flex child of body; #app sits in between. */
-#app { display: flex; flex-direction: column; min-height: 100vh; }
-#app > .page { flex: 1; }
+/* Docker Desktop keeps the window fixed and scrolls only the content pane. */
+#app { display: block; min-height: 100dvh; }
 .min-w-0 { min-width: 0; }
 .text-break-all { overflow-wrap: anywhere; }
+
+/* Docker Desktop's list tables: no card frame, tiny caps headers, hover-revealed actions. */
+.dd-table { margin-bottom: 0; }
+.dd-table thead th {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tblr-secondary);
+  background: transparent;
+  border-top: 0;
+  border-bottom: var(--tblr-border-width) solid var(--tblr-border-color);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.dd-table tbody tr:hover { background: var(--tblr-bg-surface-secondary); }
+@media (hover: hover) {
+  .dd-table .row-actions { opacity: 0; transition: opacity 0.1s linear; }
+  .dd-table tr:hover .row-actions,
+  .dd-table tr:focus-within .row-actions { opacity: 1; }
+}
 
 .json-view {
   margin: 0;
@@ -54,4 +100,6 @@
   .table-stack td { border: 0 !important; padding: 0.15rem 0 !important; overflow-wrap: anywhere; }
   .table-stack td[data-label]::before { content: attr(data-label) ': '; color: var(--tblr-secondary); }
   .table-stack td.text-end { text-align: left !important; padding-top: 0.5rem !important; }
+  /* Stacked rows have no hover target worth waiting for. */
+  .dd-table .row-actions { opacity: 1; }
 }

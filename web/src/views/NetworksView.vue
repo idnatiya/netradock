@@ -20,21 +20,21 @@ async function remove(n: Network) {
 </script>
 
 <template>
-  <PageHeader pretitle="Docker" title="Network">
+  <PageHeader title="Networks">
     <template #meta>
       <div v-if="data" class="text-secondary mt-1">{{ data.length }} network</div>
     </template>
   </PageHeader>
   <div class="page-body">
     <div class="container-xl">
-      <div class="card">
+      <div>
         <LoadState :loading="loading" :error="error" :empty="sorted.length === 0" what="network" @retry="reload">
           <template #empty>
             <div class="empty-icon"><IconNetwork :size="40" /></div>
             <p class="empty-title">Tidak ada network</p>
           </template>
           <div class="table-responsive-md">
-            <table class="table card-table table-vcenter table-stack">
+            <table class="table table-vcenter table-stack dd-table">
               <thead><tr><th>Nama</th><th>ID</th><th>Driver</th><th>Scope</th><th>Dibuat</th><th class="w-1"><span class="visually-hidden">Aksi</span></th></tr></thead>
               <tbody>
                 <tr v-for="n in sorted" :key="n.id">
@@ -45,7 +45,7 @@ async function remove(n: Network) {
                   <td data-label="Dibuat" class="text-secondary">{{ ago(n.created) }}</td>
                   <td class="text-end">
                     <span v-if="BUILTIN.has(n.name)" class="badge bg-secondary-lt">bawaan Docker</span>
-                    <button v-else class="btn btn-icon btn-ghost-danger" type="button" :aria-label="`Hapus ${n.name}`" title="Hapus" @click="remove(n)"><IconTrash :size="18" /></button>
+                    <button v-else class="btn btn-icon btn-ghost-danger row-actions" type="button" :aria-label="`Hapus ${n.name}`" title="Hapus" @click="remove(n)"><IconTrash :size="18" /></button>
                   </td>
                 </tr>
               </tbody>
