@@ -41,7 +41,7 @@ async function remove(v: Volume) {
                   <td data-label="Driver">{{ v.driver }}</td>
                   <td data-label="Mountpoint" class="font-monospace text-secondary text-break-all">{{ v.mountpoint }}</td>
                   <td data-label="Dibuat" class="text-secondary text-nowrap">{{ date(v.created_at) }}</td>
-                  <td class="text-end"><button class="btn btn-icon btn-ghost-danger row-actions" type="button" :aria-label="`Hapus ${v.name}`" title="Hapus" @click="remove(v)"><IconTrash :size="18" /></button></td>
+                  <td class="text-end"><button class="btn btn-icon btn-ghost-danger" type="button" :aria-label="`Hapus ${v.name}`" title="Hapus" @click="remove(v)"><IconTrash :size="18" /></button></td>
                 </tr>
               </tbody>
             </table>

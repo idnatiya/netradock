@@ -154,8 +154,23 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.search { max-width: 480px; width: 100%; }
+/* The box sits on Docker Desktop's blue title bar, so it draws its own light-on-blue skin. */
+.search { max-width: 560px; width: 100%; }
+.search input {
+  padding-right: 3.5rem;
+  background: rgb(0 0 0 / 0.22);
+  border-color: rgb(255 255 255 / 0.28);
+  color: #fff;
+}
+.search input::placeholder { color: rgb(255 255 255 / 0.65); }
+.search input:focus {
+  background: rgb(0 0 0 / 0.3);
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.25);
+  color: #fff;
+}
+.search .input-icon-addon { color: rgb(255 255 255 / 0.7); }
 .input-icon-addon.end { left: auto; right: 0; width: auto; padding-right: 0.5rem; pointer-events: none; }
-.search input { padding-right: 3.5rem; }
+.kbd { background: rgb(255 255 255 / 0.15); border: 0; color: #fff; }
 .dropdown-menu { position: absolute; top: 100%; left: 0; z-index: 1050; max-height: 60vh; overflow-y: auto; }
 </style>

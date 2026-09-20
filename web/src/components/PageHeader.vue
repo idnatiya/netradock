@@ -23,5 +23,6 @@ defineSlots<{ meta?(): unknown; actions?(): unknown; avatar?(): unknown }>()
 
 <style scoped>
 /* Docker Desktop page titles: one plain heading, no accent rule. */
-.page-title { font-size: 1.5rem; font-weight: 600; line-height: 1.3; }
+.page-title { font-size: 1.25rem; font-weight: 600; line-height: 1.3; }
+.page-header { margin-top: 1rem; }
 </style>

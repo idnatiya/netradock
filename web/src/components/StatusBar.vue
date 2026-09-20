@@ -36,8 +36,8 @@ const mem = computed(() => live.total.mem.at(-1) ?? 0)
 .statusbar {
   height: var(--statusbar-height);
   font-size: 12px;
-  background: var(--tblr-bg-surface-secondary);
-  border-top: var(--tblr-border-width) solid var(--tblr-border-color);
+  background: var(--statusbar-bg);
+  border-top: var(--tblr-border-width) solid var(--nav-border);
 }
 .status { height: auto; padding: 0; background: transparent; font-size: inherit; color: inherit; }
 .sep { opacity: 0.4; }

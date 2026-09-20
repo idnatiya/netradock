@@ -98,7 +98,7 @@ async function remove(i: Image) {
                     <span v-if="i.containers > 0" class="badge bg-green-lt">{{ i.containers }} container</span>
                     <span v-else class="text-secondary">tidak</span>
                   </td>
-                  <td class="text-end"><button class="btn btn-icon btn-ghost-danger row-actions" type="button" :aria-label="`Hapus ${i.tags[0] ?? shortId(i.id)}`" title="Hapus" @click="remove(i)"><IconTrash :size="18" /></button></td>
+                  <td class="text-end"><button class="btn btn-icon btn-ghost-danger" type="button" :aria-label="`Hapus ${i.tags[0] ?? shortId(i.id)}`" title="Hapus" @click="remove(i)"><IconTrash :size="18" /></button></td>
                 </tr>
               </tbody>
             </table>

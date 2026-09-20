@@ -18,7 +18,7 @@ The app listens on `127.0.0.1:8080`. Serve it through an HTTPS reverse proxy (Ca
 ## Development
 
 ```sh
-make dev     # Go API on :18080 + Vite on http://localhost:5173 (login admin / admin), Ctrl+C stops both
+make dev     # Go API on :18080 + Vite on http://localhost:5178 (login admin / admin), Ctrl+C stops both
 make test    # go test ./...
 make build   # production binary ./netradock with the UI embedded
 ```

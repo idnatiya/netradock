@@ -6,7 +6,7 @@ NETRADOCK_USERNAME ?= admin
 NETRADOCK_PASSWORD ?= admin
 NETRADOCK_SECRET ?= dev-only-secret
 NETRADOCK_PORT ?= 18080
-WEB_PORT ?= 5173
+WEB_PORT ?= 5178
 
 .PHONY: dev dev-api dev-web install build test
 

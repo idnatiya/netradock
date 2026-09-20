@@ -15,12 +15,13 @@ const router = useRouter()
 const menuOpen = ref(false)
 const sys = useLoad(() => api<System>('GET', '/system'), 10000)
 
+// `sep` draws the thin divider Docker Desktop puts between menu groups.
 const links = [
-  { to: '/', label: 'Ringkasan', icon: IconLayoutDashboard, count: () => undefined },
-  { to: '/containers', label: 'Container', icon: IconBox, count: () => sys.data.value && `${sys.data.value.containers_running}/${sys.data.value.containers}` },
-  { to: '/images', label: 'Image', icon: IconStack2, count: () => sys.data.value?.images },
-  { to: '/volumes', label: 'Volume', icon: IconDatabase, count: () => undefined },
-  { to: '/networks', label: 'Network', icon: IconNetwork, count: () => undefined },
+  { to: '/', label: 'Ringkasan', icon: IconLayoutDashboard, sep: true },
+  { to: '/containers', label: 'Containers', icon: IconBox, sep: false },
+  { to: '/images', label: 'Images', icon: IconStack2, sep: false },
+  { to: '/volumes', label: 'Volumes', icon: IconDatabase, sep: false },
+  { to: '/networks', label: 'Networks', icon: IconNetwork, sep: false },
 ]
 
 function isActive(to: string) {
@@ -43,9 +44,9 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
 
 <template>
   <div class="shell">
-    <div class="shell-brand">
+    <header class="shell-top">
       <button
-        class="btn btn-icon btn-ghost-secondary d-lg-none"
+        class="btn btn-icon topbar-btn d-lg-none"
         type="button"
         aria-controls="sidebar-menu"
         :aria-expanded="menuOpen"
@@ -54,22 +55,21 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
       >
         <IconMenu2 :size="20" />
       </button>
-      <RouterLink to="/" class="text-reset text-decoration-none"><BrandLogo /></RouterLink>
-    </div>
+      <RouterLink to="/" class="brand text-reset text-decoration-none"><BrandLogo /></RouterLink>
 
-    <header class="shell-top">
-      <GlobalSearch />
-      <div class="d-flex align-items-center gap-2 ms-auto">
-        <button type="button" class="btn btn-ghost-secondary btn-icon" :aria-label="theme === 'dark' ? 'Pakai tema terang' : 'Pakai tema gelap'" :title="theme === 'dark' ? 'Tema terang' : 'Tema gelap'" @click="toggleTheme">
+      <GlobalSearch class="mx-auto" />
+
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-icon topbar-btn" :aria-label="theme === 'dark' ? 'Pakai tema terang' : 'Pakai tema gelap'" :title="theme === 'dark' ? 'Tema terang' : 'Tema gelap'" @click="toggleTheme">
           <IconSun v-if="theme === 'dark'" :size="20" />
           <IconMoon v-else :size="20" />
         </button>
-        <Dropdown label="Menu akun" end class="nav-link d-flex lh-1 text-reset p-0 border-0 bg-transparent">
+        <Dropdown label="Menu akun" end class="account d-flex lh-1 p-0 border-0 bg-transparent">
           <template #toggle>
-            <span class="avatar avatar-sm bg-primary-lt">{{ initials() }}</span>
+            <span class="avatar avatar-sm">{{ initials() }}</span>
             <span class="ps-2 text-start d-none d-md-block">
               <span class="d-block">{{ currentUser }}</span>
-              <span class="d-block mt-1 small text-secondary">Administrator</span>
+              <span class="d-block mt-1 small opacity-75">Administrator</span>
             </span>
           </template>
           <button type="button" class="dropdown-item" role="menuitem" @click="logout"><IconLogout :size="18" class="icon dropdown-item-icon" />Keluar</button>
@@ -79,11 +79,10 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
 
     <aside id="sidebar-menu" class="shell-nav" :class="{ open: menuOpen }">
       <ul class="nav-list">
-        <li v-for="l in links" :key="l.to">
+        <li v-for="l in links" :key="l.to" :class="{ 'nav-sep': l.sep }">
           <RouterLink class="nav-item" :class="{ active: isActive(l.to) }" :to="l.to" :aria-current="isActive(l.to) ? 'page' : undefined">
             <component :is="l.icon" :size="18" class="flex-shrink-0" />
             <span class="flex-grow-1">{{ l.label }}</span>
-            <span v-if="l.count() !== undefined" class="badge bg-secondary-lt">{{ l.count() }}</span>
           </RouterLink>
         </li>
       </ul>
@@ -112,39 +111,41 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
   display: grid;
   grid-template-columns: var(--nav-width) 1fr;
   grid-template-rows: var(--topbar-height) 1fr var(--statusbar-height);
-  grid-template-areas: 'brand top' 'nav main' 'status status';
+  grid-template-areas: 'top top' 'nav main' 'status status';
   height: 100dvh;
 }
-.shell-brand {
-  grid-area: brand;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0 0.75rem;
-  background: var(--tblr-bg-surface-secondary);
-  border-right: var(--tblr-border-width) solid var(--tblr-border-color);
-  border-bottom: var(--tblr-border-width) solid var(--tblr-border-color);
-}
+
+/* Docker Desktop's title bar spans the whole window, above the sidebar. */
 .shell-top {
   grid-area: top;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0 0.75rem;
-  background: var(--tblr-body-bg);
-  border-bottom: var(--tblr-border-width) solid var(--tblr-border-color);
+  background: var(--topbar-bg);
+  color: var(--topbar-fg);
 }
+.brand { color: var(--topbar-fg); }
+.shell-top :deep(.brand-mark) { background: transparent; width: 1.75rem; height: 1.75rem; }
+.shell-top :deep(.brand-mark svg) { width: 26px; height: 26px; }
+.topbar-btn { color: var(--topbar-fg); background: transparent; border-color: transparent; }
+.topbar-btn:hover { background: rgb(255 255 255 / 0.14); color: var(--topbar-fg); }
+.account { color: var(--topbar-fg); }
+.account:hover { color: var(--topbar-fg); }
+.account .avatar { background: rgb(255 255 255 / 0.18); color: var(--topbar-fg); }
+
 .shell-nav {
   grid-area: nav;
   padding: 0.5rem;
   overflow-y: auto;
-  background: var(--tblr-bg-surface-secondary);
-  border-right: var(--tblr-border-width) solid var(--tblr-border-color);
+  background: var(--nav-bg);
+  border-right: var(--tblr-border-width) solid var(--nav-border);
 }
 .shell-main { grid-area: main; overflow: auto; background: var(--tblr-body-bg); }
 .shell-status { grid-area: status; }
 
 .nav-list { list-style: none; margin: 0; padding: 0; }
+.nav-sep { margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: var(--tblr-border-width) solid var(--tblr-border-color); }
 .nav-item {
   display: flex;
   align-items: center;
@@ -161,10 +162,10 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
 @media (max-width: 991.98px) {
   .shell {
     grid-template-columns: 1fr;
-    grid-template-rows: var(--topbar-height) auto 1fr var(--statusbar-height);
-    grid-template-areas: 'brand' 'top' 'main' 'status';
+    grid-template-rows: var(--topbar-height) 1fr var(--statusbar-height);
+    grid-template-areas: 'top' 'main' 'status';
   }
-  .shell-brand { border-right: 0; }
+  .shell-top { gap: 0.5rem; }
   .shell-nav {
     position: fixed;
     top: var(--topbar-height);

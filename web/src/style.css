@@ -15,29 +15,38 @@
   --tblr-border-radius: 6px;
   --tblr-border-radius-sm: 4px;
   --nav-width: 232px;
-  --topbar-height: 48px;
   --statusbar-height: 28px;
+  /* The title bar stays blue in both themes, like Docker Desktop. */
+  --topbar-height: 56px;
+  --topbar-bg: linear-gradient(90deg, #1d63ed 0%, #1a4fc4 55%, #0f2f6b 100%);
+  --topbar-fg: #ffffff;
 }
 :root, [data-bs-theme='light'] {
   --tblr-body-bg: #ffffff;
   --tblr-body-color: #17191e;
   --tblr-bg-surface: #ffffff;
-  --tblr-bg-surface-secondary: #f9f9fa;
-  --tblr-border-color: #e2e4e9;
+  --tblr-bg-surface-secondary: #f6f7f8;
+  --tblr-border-color: #e5e7eb;
   --tblr-border-color-translucent: rgb(23 25 30 / 0.08);
   --tblr-secondary: #677285;
+  --nav-bg: #f1f2f4;
+  --nav-border: #e2e4e9;
+  --statusbar-bg: #f1f2f4;
 }
 [data-bs-theme='dark'] {
-  --tblr-body-bg: #17191e;
+  --tblr-body-bg: #131a23;
   --tblr-body-color: #e6e8eb;
-  --tblr-bg-surface: #1c1f26;
-  --tblr-bg-surface-secondary: #21262d;
-  --tblr-border-color: #30363d;
+  --tblr-bg-surface: #1a212b;
+  --tblr-bg-surface-secondary: #1c2530;
+  --tblr-border-color: rgb(255 255 255 / 0.09);
   --tblr-border-color-translucent: rgb(230 232 235 / 0.1);
   --tblr-secondary: #8993a4;
   --tblr-link-color: #5b8ff5;
   --tblr-link-color-rgb: 91, 143, 245;
   --tblr-link-hover-color: #85acf8;
+  --nav-bg: #0d1117;
+  --nav-border: #000000;
+  --statusbar-bg: #0d1117;
 }
 
 body { font-family: var(--tblr-font-sans-serif); }
@@ -58,26 +67,29 @@ body { font-family: var(--tblr-font-sans-serif); }
 .min-w-0 { min-width: 0; }
 .text-break-all { overflow-wrap: anywhere; }
 
-/* Docker Desktop's list tables: no card frame, tiny caps headers, hover-revealed actions. */
-.dd-table { margin-bottom: 0; }
+/* Docker Desktop uses the full window width; Tabler's container caps it at 1320px. */
+.page-wrapper .container-xl { max-width: none; padding-inline: 1.5rem; }
+
+/* Dark sidebar uses a neutral pill for the active item, like Docker Desktop. */
+[data-bs-theme='dark'] .nav-item.active {
+  background: color-mix(in oklab, var(--tblr-body-color) 10%, transparent);
+  color: var(--tblr-body-color);
+}
+
+/* Docker Desktop's list tables: no card frame, tiny caps headers, dense rows. */
+.dd-table { margin-bottom: 0; font-size: 13px; }
 .dd-table thead th {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--tblr-secondary);
   background: transparent;
   border-top: 0;
   border-bottom: var(--tblr-border-width) solid var(--tblr-border-color);
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
 }
+.dd-table tbody td { padding: 0.55rem 0.75rem; }
 .dd-table tbody tr:hover { background: var(--tblr-bg-surface-secondary); }
-@media (hover: hover) {
-  .dd-table .row-actions { opacity: 0; transition: opacity 0.1s linear; }
-  .dd-table tr:hover .row-actions,
-  .dd-table tr:focus-within .row-actions { opacity: 1; }
-}
 
 .json-view {
   margin: 0;
@@ -100,6 +112,4 @@ body { font-family: var(--tblr-font-sans-serif); }
   .table-stack td { border: 0 !important; padding: 0.15rem 0 !important; overflow-wrap: anywhere; }
   .table-stack td[data-label]::before { content: attr(data-label) ': '; color: var(--tblr-secondary); }
   .table-stack td.text-end { text-align: left !important; padding-top: 0.5rem !important; }
-  /* Stacked rows have no hover target worth waiting for. */
-  .dd-table .row-actions { opacity: 1; }
 }
