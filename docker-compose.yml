@@ -6,6 +6,6 @@ services:
     env_file: .env
     # Bound to localhost: put an HTTPS reverse proxy in front instead of exposing it directly.
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${NETRADOCK_PORT:-8080}:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
