@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { IconBox, IconChevronDown, IconDatabase, IconLayoutDashboard, IconLogout, IconMenu2, IconMoon, IconNetwork, IconStack2, IconSun } from '@tabler/icons-vue'
 import { api, currentUser, notice, type System } from '@/api'
+import { useLiveStats } from '@/liveStats'
 import { theme, toggleTheme } from '@/theme'
 import { useLoad } from '@/useLoad'
 import BrandLogo from '@/components/BrandLogo.vue'
@@ -14,14 +15,58 @@ const route = useRoute()
 const router = useRouter()
 const menuOpen = ref(false)
 const sys = useLoad(() => api<System>('GET', '/system'), 10000)
+const live = useLiveStats()
 
-// `sep` draws the thin divider Docker Desktop puts between menu groups.
-const links = [
-  { to: '/', label: 'Ringkasan', icon: IconLayoutDashboard, sep: true },
-  { to: '/containers', label: 'Containers', icon: IconBox, sep: false },
-  { to: '/images', label: 'Images', icon: IconStack2, sep: false },
-  { to: '/volumes', label: 'Volumes', icon: IconDatabase, sep: false },
-  { to: '/networks', label: 'Networks', icon: IconNetwork, sep: false },
+const ncpu = computed(() => sys.data.value?.ncpu || 1)
+const memTotal = computed(() => sys.data.value?.mem_total || 1)
+const cpuPct = computed(() => {
+  const latestCpu = live.total.cpu.at(-1) ?? 0
+  return Math.min(100, latestCpu / ncpu.value)
+})
+const ramPct = computed(() => {
+  const latestMem = live.total.mem.at(-1) ?? 0
+  return Math.min(100, (latestMem / memTotal.value) * 100)
+})
+const meterBarColor = (pct: number) => (pct >= 85 ? 'bg-danger' : pct >= 65 ? 'bg-warning' : 'bg-primary')
+
+interface NavItem {
+  to: string
+  label: string
+  icon: any
+  badge?: () => string | undefined
+}
+
+interface NavGroup {
+  title?: string
+  items: NavItem[]
+}
+
+const navGroups: NavGroup[] = [
+  {
+    title: 'UTAMA',
+    items: [
+      { to: '/', label: 'Ringkasan', icon: IconLayoutDashboard },
+    ],
+  },
+  {
+    title: 'SUMBER DAYA',
+    items: [
+      {
+        to: '/containers',
+        label: 'Containers',
+        icon: IconBox,
+        badge: () => sys.data.value?.containers_running !== undefined ? `${sys.data.value.containers_running}` : undefined,
+      },
+      {
+        to: '/images',
+        label: 'Images',
+        icon: IconStack2,
+        badge: () => sys.data.value?.images !== undefined ? `${sys.data.value.images}` : undefined,
+      },
+      { to: '/volumes', label: 'Volumes', icon: IconDatabase },
+      { to: '/networks', label: 'Networks', icon: IconNetwork },
+    ],
+  },
 ]
 
 function isActive(to: string) {
@@ -97,15 +142,56 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
     </header>
 
     <aside id="sidebar-menu" class="shell-nav" :class="{ open: menuOpen }">
-      <ul class="nav-list">
-        <li v-for="l in links" :key="l.to" :class="{ 'nav-sep': l.sep }">
-          <RouterLink class="nav-item" :class="{ active: isActive(l.to) }" :to="l.to" :aria-current="isActive(l.to) ? 'page' : undefined">
-            <component :is="l.icon" :size="18" class="flex-shrink-0" />
-            <span class="flex-grow-1">{{ l.label }}</span>
-          </RouterLink>
-        </li>
-      </ul>
-      <button type="button" class="btn w-100 mt-3 d-lg-none" @click="logout"><IconLogout :size="18" class="icon" />Keluar ({{ currentUser }})</button>
+      <div class="shell-nav-content">
+        <div v-for="g in navGroups" :key="g.title || 'main'" class="nav-group mb-3">
+          <div v-if="g.title" class="nav-group-header">{{ g.title }}</div>
+          <ul class="nav-list">
+            <li v-for="l in g.items" :key="l.to">
+              <RouterLink class="nav-item" :class="{ active: isActive(l.to) }" :to="l.to" :aria-current="isActive(l.to) ? 'page' : undefined">
+                <component :is="l.icon" :size="18" class="flex-shrink-0" />
+                <span class="flex-grow-1">{{ l.label }}</span>
+                <span v-if="l.badge && l.badge() !== undefined" class="badge bg-secondary-lt font-monospace px-1.5 py-0.5" style="font-size: 11px;">
+                  {{ l.badge() }}
+                </span>
+              </RouterLink>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div v-if="sys.data.value" class="shell-nav-footer">
+        <div class="nav-meters">
+          <div class="meter-row">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="meter-label">CPU Host</span>
+              <span class="meter-val font-monospace">{{ cpuPct.toFixed(1) }}%</span>
+            </div>
+            <div class="progress progress-xs">
+              <div
+                class="progress-bar"
+                :class="meterBarColor(cpuPct)"
+                :style="{ width: `${Math.min(100, Math.max(2, cpuPct))}%` }"
+              ></div>
+            </div>
+          </div>
+          <div class="meter-row mt-2.5">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="meter-label">RAM Host</span>
+              <span class="meter-val font-monospace">{{ ramPct.toFixed(1) }}%</span>
+            </div>
+            <div class="progress progress-xs">
+              <div
+                class="progress-bar"
+                :class="meterBarColor(ramPct)"
+                :style="{ width: `${Math.min(100, Math.max(2, ramPct))}%` }"
+              ></div>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline-secondary w-100 mt-3 d-lg-none" @click="logout">
+          <IconLogout :size="16" class="icon" />Keluar ({{ currentUser }})
+        </button>
+      </div>
     </aside>
     <div v-if="menuOpen" class="shell-scrim d-lg-none" @click="menuOpen = false"></div>
 
@@ -271,16 +357,37 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
 
 .shell-nav {
   grid-area: nav;
-  padding: 0.5rem;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: var(--nav-bg);
   border-right: var(--tblr-border-width) solid var(--nav-border);
+  overflow: hidden;
+}
+.shell-nav-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.5rem 0.25rem;
+}
+.shell-nav-footer {
+  padding: 0.85rem 0.75rem;
+  border-top: 1px solid var(--tblr-border-color-translucent);
+  background: var(--tblr-bg-surface-secondary);
+  flex-shrink: 0;
+}
+.meter-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--tblr-secondary);
+}
+.meter-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tblr-body-color);
 }
 .shell-main { grid-area: main; overflow: auto; background: var(--tblr-body-bg); }
 .shell-status { grid-area: status; }
 
 .nav-list { list-style: none; margin: 0; padding: 0; }
-.nav-sep { margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: var(--tblr-border-width) solid var(--tblr-border-color); }
 .nav-item {
   display: flex;
   align-items: center;
@@ -290,6 +397,7 @@ const initials = () => (currentUser.value ?? '?').slice(0, 2).toUpperCase()
   border-radius: var(--tblr-border-radius);
   color: var(--tblr-body-color);
   text-decoration: none;
+  font-size: 13.5px;
 }
 .nav-item:hover { background: var(--tblr-border-color-translucent); }
 .nav-item.active { background: var(--tblr-primary-lt); color: var(--tblr-primary); font-weight: 500; }

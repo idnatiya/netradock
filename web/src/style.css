@@ -50,7 +50,11 @@
   --statusbar-bg: #0d1117;
 }
 
-body { font-family: var(--tblr-font-sans-serif); }
+body {
+  font-family: var(--tblr-font-sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 .brand-mark {
   display: inline-flex;
@@ -150,5 +154,45 @@ body { font-family: var(--tblr-font-sans-serif); }
   line-height: 1.2;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+}
+
+/* Card KPI hover glow */
+.card-kpi {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+.card-kpi.card-link:hover {
+  transform: translateY(-2px);
+  border-color: var(--tblr-primary);
+  box-shadow: 0 6px 16px -2px rgba(29, 99, 237, 0.14);
+}
+[data-bs-theme='dark'] .card-kpi.card-link:hover {
+  box-shadow: 0 6px 20px -2px rgba(29, 99, 237, 0.3);
+}
+
+/* Sidebar navigation groups */
+.nav-group-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tblr-secondary);
+  padding: 0.65rem 0.625rem 0.25rem;
+  user-select: none;
+}
+
+/* Slim custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--tblr-border-color-translucent);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--tblr-secondary);
 }
 
