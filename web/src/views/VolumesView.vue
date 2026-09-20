@@ -11,7 +11,7 @@ import PageHeader from '@/components/PageHeader.vue'
 
 const { data, error, loading, reload } = useLoad(() => api<Volume[]>('GET', '/volumes'))
 const sorted = computed(() => [...(data.value ?? [])].sort((a, b) => a.name.localeCompare(b.name)))
-const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+const fmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' })
 const date = (s: string) => (s ? fmt.format(new Date(s)) : '-')
 
 async function remove(v: Volume) {

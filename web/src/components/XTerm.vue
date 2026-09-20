@@ -44,7 +44,7 @@ onMounted(() => {
   }
   ws.onmessage = (e) => term?.write(new Uint8Array(e.data as ArrayBuffer))
   // Normal closure means the stream or shell ended; the parent picks the wording.
-  ws.onclose = (e) => emit('closed', e.code === 1000 ? '' : e.reason || `koneksi terputus (${e.code})`)
+  ws.onclose = (e) => emit('closed', e.code === 1000 ? '' : e.reason || `connection closed (${e.code})`)
 
   if (props.interactive) {
     const enc = new TextEncoder()

@@ -45,7 +45,7 @@ const text = computed(() => props.label ?? props.state)
     />
     <span class="sr-only">{{ text }}</span>
   </span>
-  <Badge v-else :variant="variant" class="font-mono text-[11px] font-normal tracking-tight">
+  <Badge v-else :variant="variant" class="font-mono text-xs py-0.5 px-2 font-normal tracking-tight">
     <span
       class="inline-block size-1.5 rounded-full"
       :class="[dotColor, { 'animate-pulse-dot': state === 'restarting' }]"

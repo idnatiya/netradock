@@ -8,7 +8,7 @@ export function bytes(n: number) {
   return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
 
-const rtf = new Intl.RelativeTimeFormat('id', { numeric: 'auto' })
+const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
 
 export function ago(unixSeconds: number) {
   const diff = unixSeconds - Date.now() / 1000
